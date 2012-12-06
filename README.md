@@ -1,4 +1,4 @@
-cloudsimulator
+CloudSimulator
 ==============
 
-Simulator of a cloud environment 
+Simulator of a cloud environment.
