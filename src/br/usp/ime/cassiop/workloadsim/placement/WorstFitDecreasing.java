@@ -89,7 +89,13 @@ public class WorstFitDecreasing implements PlacementModule {
 			} else {
 				PhysicalMachine inactivePm = virtualizationManager
 						.getNextInactivePm(vm, new WorstFitTypeChooser());
-				virtualizationManager.consolidate(vm, inactivePm);
+				if (inactivePm != null) {
+					virtualizationManager.consolidate(vm, inactivePm);
+				} else {
+					logger.info(
+							"No inactive physical machine provided. Could not consolidate VM {}.",
+							vm.toString());
+				}
 			}
 		}
 
@@ -162,7 +168,7 @@ public class WorstFitDecreasing implements PlacementModule {
 		}
 
 	}
-	
+
 	@Override
 	public void setParameters(Map<String, Object> parameters) throws Exception {
 		Object e = parameters.get(Constants.PARAMETER_VIRTUALIZATION_MANAGER);

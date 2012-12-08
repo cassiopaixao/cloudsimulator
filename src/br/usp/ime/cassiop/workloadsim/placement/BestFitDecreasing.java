@@ -94,7 +94,13 @@ public class BestFitDecreasing implements PlacementModule {
 			} else {
 				PhysicalMachine inactivePm = virtualizationManager
 						.getNextInactivePm(vm, new BestFitTypeChooser());
-				virtualizationManager.consolidate(vm, inactivePm);
+				if (inactivePm != null) {
+					virtualizationManager.consolidate(vm, inactivePm);
+				} else {
+					logger.info(
+							"No inactive physical machine provided. Could not consolidate VM {}.",
+							vm.toString());
+				}
 			}
 		}
 
@@ -129,18 +135,8 @@ public class BestFitDecreasing implements PlacementModule {
 			if (selectedMachine == null) {
 				logger.info("No inactive physical machine can satisfy the virtual machine's demand. Activating the physical machine with lowest loss of performance.");
 
-				PhysicalMachine lessLossOfPerformanceMachine = null;
-				double lessLossOfPerformance = Double.MAX_VALUE;
-
-				for (PhysicalMachine pm : machineTypes) {
-					if (!pm.canHost(vmDemand)) {
-						if (lossOfPerformance(pm, vmDemand) < lessLossOfPerformance) {
-							lessLossOfPerformance = lossOfPerformance(pm,
-									vmDemand);
-							lessLossOfPerformanceMachine = pm;
-						}
-					}
-				}
+				PhysicalMachine lessLossOfPerformanceMachine = lessLossMachine(
+						machineTypes, vmDemand);
 
 				if (lessLossOfPerformanceMachine == null) {
 					logger.info("There is no inactive physical machine. Need to overload one.");
@@ -150,6 +146,22 @@ public class BestFitDecreasing implements PlacementModule {
 				selectedMachine = lessLossOfPerformanceMachine;
 			}
 			return selectedMachine;
+		}
+
+		private PhysicalMachine lessLossMachine(
+				List<PhysicalMachine> machineTypes, VirtualMachine vmDemand) {
+			PhysicalMachine lessLossOfPerformanceMachine = null;
+			double lessLossOfPerformance = Double.MAX_VALUE;
+
+			for (PhysicalMachine pm : machineTypes) {
+				if (!pm.canHost(vmDemand)) {
+					if (lossOfPerformance(pm, vmDemand) < lessLossOfPerformance) {
+						lessLossOfPerformance = lossOfPerformance(pm, vmDemand);
+						lessLossOfPerformanceMachine = pm;
+					}
+				}
+			}
+			return lessLossOfPerformanceMachine;
 		}
 
 		private double lossOfPerformance(PhysicalMachine pm, VirtualMachine vm) {

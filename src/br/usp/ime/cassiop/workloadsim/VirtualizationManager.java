@@ -106,8 +106,13 @@ public class VirtualizationManager implements Parametrizable {
 			PhysicalMachineTypeChooser pmTypeChooser) throws Exception {
 
 		PhysicalMachine selectedMachine = pmTypeChooser.choosePMType(
-				environment.getMachineTypes(), vmDemand);
+				environment.getAvailableMachineTypes(), vmDemand);
 
+		if (selectedMachine == null) {
+			logger.info("No more physical machines available.");
+			return null;
+		}
+		
 		PhysicalMachine pm = environment.getMachineOfType(selectedMachine);
 
 		pm.setName(Integer.toString(pmList.size() + 1));

@@ -2,6 +2,7 @@ package br.usp.ime.cassiop.workloadsim.environment;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import br.usp.ime.cassiop.workloadsim.Environment;
 import br.usp.ime.cassiop.workloadsim.model.PhysicalMachine;
@@ -43,7 +44,7 @@ public class IdealCluster implements Environment {
 	 * br.usp.ime.cassiop.workloadsim.environment.Environment#getMachineTypes()
 	 */
 	@Override
-	public List<PhysicalMachine> getMachineTypes() {
+	public List<PhysicalMachine> getAvailableMachineTypes() {
 		List<PhysicalMachine> availableMachines = new ArrayList<PhysicalMachine>(
 				1);
 
@@ -60,6 +61,11 @@ public class IdealCluster implements Environment {
 
 	@Override
 	public void clear() {
+		// nothing to do
+	}
+
+	@Override
+	public void setParameters(Map<String, Object> parameters) throws Exception {
 		// nothing to do
 	}
 }

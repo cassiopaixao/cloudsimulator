@@ -4,3 +4,6 @@
 *.jar
 *.war
 *.ear
+
+# Statistics and input files #
+*.csv

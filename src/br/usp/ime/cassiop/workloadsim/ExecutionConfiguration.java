@@ -51,6 +51,7 @@ public class ExecutionConfiguration {
 			forecastingModule.setParameters(parameters);
 			measurementModule.setParameters(parameters);
 			statisticsModule.setParameters(parameters);
+			environment.setParameters(parameters);
 
 			Object workload = parameters.get(Constants.PARAMETER_WORKLOAD);
 

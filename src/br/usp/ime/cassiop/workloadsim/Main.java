@@ -21,19 +21,25 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 
-		long start, finish, interval;
+		long start, finish, interval, start_execution;
 		start = Calendar.getInstance().getTime().getTime();
 
 		ExecutionConfiguration execution = ExecutionBuilder.build(
 				EnvironmentToUse.GOOGLE,
 				ForecasterToUse.WORKLOAD_ERROR_INJECTOR,
 				PlacementType.BEST_FIT, StatisticsType.FIXED_ERRORS,
-				WorkloadToUse.GOOGLE_TRACE_2);
+				WorkloadToUse.GOOGLE_TRACE_FILE_2);
 
 		for (int i = 0; i < 9; i++) { // 0.8 to 1.2 fixed
 			// for (int i = 4; i < 5; i++) { // 1.0 fixed
-			// for (int i = 0; i < 10; i++) { // 20 times randomized
+			// for (int i = 0; i < 5; i++) { // 20 times randomized
 			try {
+				start_execution = Calendar.getInstance().getTime().getTime();
+
+				execution.setParameter(
+						Constants.PARAMETER_ENVIRONMENT_MULTIPLIER, new Double(
+								1));
+
 				double meanError, variation;
 
 				// -0.8 a 1.2 fixo
@@ -54,6 +60,12 @@ public class Main {
 
 				logger.info("Simulation {} for error {} ~ {} done.", i, 1
 						+ meanError - variation, 1 + meanError + variation);
+
+				finish = Calendar.getInstance().getTime().getTime();
+				interval = finish - start_execution;
+
+				logger.info("Execution time: {}s", interval / 1000);
+
 			} catch (Exception ex) {
 				ex.printStackTrace();
 			}

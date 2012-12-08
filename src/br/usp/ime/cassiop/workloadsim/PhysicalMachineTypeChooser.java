@@ -6,7 +6,7 @@ import br.usp.ime.cassiop.workloadsim.model.PhysicalMachine;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 
 public interface PhysicalMachineTypeChooser {
-	public PhysicalMachine choosePMType(List<PhysicalMachine> machineTypes,
-			VirtualMachine vmDemand);
+	public PhysicalMachine choosePMType(
+			List<PhysicalMachine> availableMachineTypes, VirtualMachine vmDemand);
 
 }

@@ -18,6 +18,7 @@ import br.usp.ime.cassiop.workloadsim.statistic.FixedErrosExecutionsStatistics;
 import br.usp.ime.cassiop.workloadsim.statistic.OneExecutionStatistics;
 import br.usp.ime.cassiop.workloadsim.statistic.RandomizedExecutionsStatistics;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
+import br.usp.ime.cassiop.workloadsim.workload.GoogleClusterdataFileWorkload;
 import br.usp.ime.cassiop.workloadsim.workload.GoogleClusterdataWorkload;
 import br.usp.ime.cassiop.workloadsim.workload.GoogleWorkload;
 
@@ -31,7 +32,7 @@ public class ExecutionBuilder {
 	}
 
 	public enum WorkloadToUse {
-		GOOGLE_TRACE_1, GOOGLE_TRACE_2, NONE
+		GOOGLE_TRACE_1, GOOGLE_TRACE_2, GOOGLE_TRACE_FILE_2, NONE
 	}
 
 	public enum EnvironmentToUse {
@@ -115,7 +116,10 @@ public class ExecutionBuilder {
 		case GOOGLE_TRACE_2:
 			sb.append("30d");
 			break;
-		default:
+		case GOOGLE_TRACE_FILE_2:
+			sb.append("30d-file");
+			break;
+		case NONE:
 		}
 
 		sb.append(".csv");
@@ -192,6 +196,10 @@ public class ExecutionBuilder {
 			case GOOGLE_TRACE_2:
 				execution.setParameter(Constants.PARAMETER_WORKLOAD,
 						GoogleClusterdataWorkload.build());
+				break;
+			case GOOGLE_TRACE_FILE_2:
+				execution.setParameter(Constants.PARAMETER_WORKLOAD,
+						GoogleClusterdataFileWorkload.build());
 				break;
 			case NONE:
 				break;

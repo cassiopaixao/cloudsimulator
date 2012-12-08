@@ -8,9 +8,11 @@ import java.util.Map;
 import br.usp.ime.cassiop.workloadsim.Environment;
 import br.usp.ime.cassiop.workloadsim.model.PhysicalMachine;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
+import br.usp.ime.cassiop.workloadsim.util.Constants;
 
 public class GoogleCluster implements Environment {
 	private Map<PhysicalMachine, MachineStatus> environment = null;
+	private double environmentMultiplier = 1.0;
 
 	public GoogleCluster() {
 		initialize();
@@ -46,10 +48,14 @@ public class GoogleCluster implements Environment {
 
 	private void addPmStatus(int machinesAvailable, double cpuCapacity,
 			double memoryCapacity) {
+		if ((int) (machinesAvailable * environmentMultiplier) == 0) {
+			return;
+		}
+
 		PhysicalMachine pm = new PhysicalMachine();
 		MachineStatus status = new MachineStatus();
 
-		status.setAvailable(machinesAvailable);
+		status.setAvailable((int) (machinesAvailable * environmentMultiplier));
 		pm.setCapacity(ResourceType.CPU, cpuCapacity);
 		pm.setCapacity(ResourceType.MEMORY, memoryCapacity);
 
@@ -90,7 +96,7 @@ public class GoogleCluster implements Environment {
 	 * br.usp.ime.cassiop.workloadsim.environment.Environment#getMachineTypes()
 	 */
 	@Override
-	public List<PhysicalMachine> getMachineTypes() {
+	public List<PhysicalMachine> getAvailableMachineTypes() {
 		List<PhysicalMachine> availableMachines = new ArrayList<PhysicalMachine>();
 
 		for (PhysicalMachine pm : environment.keySet()) {
@@ -138,6 +144,22 @@ public class GoogleCluster implements Environment {
 		for (MachineStatus ms : environment.values()) {
 			ms.clear();
 		}
+	}
+
+	@Override
+	public void setParameters(Map<String, Object> parameters) throws Exception {
+		Object o = parameters.get(Constants.PARAMETER_ENVIRONMENT_MULTIPLIER);
+		if (o instanceof Double) {
+			setEnvironmentMultiplier(((Double) o).doubleValue());
+		} else {
+			throw new Exception(String.format("Invalid parameter: %s",
+					Constants.PARAMETER_ENVIRONMENT_MULTIPLIER));
+		}
+	}
+
+	private void setEnvironmentMultiplier(double environmentMultiplier) {
+		this.environmentMultiplier = environmentMultiplier;
+		initialize();
 	}
 
 }

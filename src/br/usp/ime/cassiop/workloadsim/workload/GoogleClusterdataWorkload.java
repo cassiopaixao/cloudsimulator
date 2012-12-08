@@ -18,10 +18,11 @@ public class GoogleClusterdataWorkload extends Workload {
 	private Database db = null;
 
 	public static GoogleClusterdataWorkload build() throws Exception {
-		long initialTime = 600000000;
-		long timeInterval = 300000000;
-		long lastTime = 1500000000;
-
+		long initialTime = 600;
+		long timeInterval = 300;
+//		long lastTime = 25200;
+		long lastTime = 2100;
+		
 		GoogleClusterdataWorkload gw = new GoogleClusterdataWorkload(
 				initialTime, timeInterval, lastTime);
 
