@@ -24,57 +24,98 @@ public class Main {
 		long start, finish, interval, start_execution;
 		start = Calendar.getInstance().getTime().getTime();
 
-		ExecutionConfiguration execution = ExecutionBuilder.build(
-				EnvironmentToUse.GOOGLE,
-				ForecasterToUse.WORKLOAD_ERROR_INJECTOR,
-				PlacementType.BEST_FIT, StatisticsType.FIXED_ERRORS,
-				WorkloadToUse.GOOGLE_TRACE_FILE_2);
+		for (PlacementType placement : PlacementType.values()) {
 
-		for (int i = 0; i < 9; i++) { // 0.8 to 1.2 fixed
+			ExecutionConfiguration execution = ExecutionBuilder.build(
+					EnvironmentToUse.IDEAL,
+					ForecasterToUse.WORKLOAD_ERROR_INJECTOR, placement,
+					StatisticsType.FIXED_ERRORS,
+					WorkloadToUse.GOOGLE_TRACE_FILE_2);
+
+//			 for (int i = 0; i < 9; i++) { // 0.8 to 1.2 fixed
+			for (int i = 2; i < 7; i+= 2) { // 0.9, 1.0, 1.1
+			// for (int i = 0; i < 7; i++) { // 0.97 to 1.03 fixed
+			// for (int i = 0; i < 4; i++) { // 0.992 to 0.998 fixed
+			// for (int i = 0; i < 5; i++) { // 0.9990 to 1.0000 fixed
 			// for (int i = 4; i < 5; i++) { // 1.0 fixed
-			// for (int i = 0; i < 5; i++) { // 20 times randomized
-			try {
-				start_execution = Calendar.getInstance().getTime().getTime();
+//			for (int i = 2; i < 3; i++) { // 0.9 fixed
+				// for (int i = 0; i < 5; i++) { // 20 times randomized
 
-				execution.setParameter(
-						Constants.PARAMETER_ENVIRONMENT_MULTIPLIER, new Double(
-								1));
+				try {
+					start_execution = Calendar.getInstance().getTime()
+							.getTime();
 
-				double meanError, variation;
+					execution.setParameter(
+							Constants.PARAMETER_ENVIRONMENT_MULTIPLIER,
+							new Double(1));
 
-				// -0.8 a 1.2 fixo
-				meanError = -0.2 + i * 0.05;
-				variation = 0;
+					double meanError, variation;
 
-				// 0.8 a 1.2 aleatorio
-				// meanError = 0;
-				// variation = 0.2;
+					// 0.8 a 1.2 fixo
+					meanError = -0.2 + i * 0.05;
+					variation = 0;
 
-				configureError(execution, meanError, variation);
+					// 0.97 a 1.03 fixo
+					// meanError = -0.03 + i * 0.01;
+					// variation = 0;
 
-				execution.setParameter(
-						Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER,
-						String.format("%d", -20 + i * 5));
+					// 0.992 a 0.998 fixo
+					// meanError = -0.008 + i * 0.002;
+					// variation = 0;
 
-				execution.run();
+					// // 0.999 a 1.00 fixo
+					// meanError = -0.001 + i * 0.00025;
+					// variation = 0;
 
-				logger.info("Simulation {} for error {} ~ {} done.", i, 1
-						+ meanError - variation, 1 + meanError + variation);
+					// 0.8 a 1.2 aleatorio
+					// meanError = 0;
+					// variation = 0.2;
 
-				finish = Calendar.getInstance().getTime().getTime();
-				interval = finish - start_execution;
+					configureError(execution, meanError, variation);
 
-				logger.info("Execution time: {}s", interval / 1000);
+					execution
+							.setParameter(
+									Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER,
+									String.format("%d", -20 + i * 5));
 
-			} catch (Exception ex) {
-				ex.printStackTrace();
+					// execution.setParameter(
+					// Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER,
+					// String.format("%d", -3 + i));
+
+					// execution
+					// .setParameter(
+					// Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER,
+					// String.format("%.2f", -0.8 + i * 0.2));
+
+					// execution
+					// .setParameter(
+					// Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER,
+					// String.format("%.3f", -0.1 + i * 0.025));
+
+					logger.info("Starting simulation {} for error {} ~ {}.", i,
+							1 + meanError - variation, 1 + meanError
+									+ variation);
+
+					execution.run();
+
+					logger.info("Simulation {} for error {} ~ {} done.", i, 1
+							+ meanError - variation, 1 + meanError + variation);
+
+					finish = Calendar.getInstance().getTime().getTime();
+					interval = finish - start_execution;
+
+					logger.info("Execution time: {}s", interval / 1000);
+
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+
 			}
-
 		}
 		finish = Calendar.getInstance().getTime().getTime();
 		interval = finish - start;
 
-		logger.info("Execution time: {}", interval);
+		logger.info("Total execution time: {}", interval / 1000);
 
 	}
 
