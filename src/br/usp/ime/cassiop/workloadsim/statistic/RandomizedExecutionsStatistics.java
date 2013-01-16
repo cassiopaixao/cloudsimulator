@@ -41,7 +41,7 @@ public class RandomizedExecutionsStatistics extends StatisticsModule {
 		}
 	}
 
-	private void initialize() throws Exception {
+	public void initialize() throws Exception {
 		if (statisticsFile == null) {
 			statisticsFile = Paths.get("res/statistics.csv");
 		}

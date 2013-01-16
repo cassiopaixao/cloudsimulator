@@ -14,6 +14,7 @@ import br.usp.ime.cassiop.workloadsim.measurement.WorkloadMeasurement;
 import br.usp.ime.cassiop.workloadsim.placement.BestFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.FirstFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.WorstFitDecreasing;
+import br.usp.ime.cassiop.workloadsim.statistic.DetailedExecutionStatistics;
 import br.usp.ime.cassiop.workloadsim.statistic.FixedErrosExecutionsStatistics;
 import br.usp.ime.cassiop.workloadsim.statistic.OneExecutionStatistics;
 import br.usp.ime.cassiop.workloadsim.statistic.RandomizedExecutionsStatistics;
@@ -28,7 +29,7 @@ public class ExecutionBuilder {
 	};
 
 	public enum StatisticsType {
-		ONE_EXECUTION, FIXED_ERRORS, RANDOMIZED_EXECUTION
+		ONE_EXECUTION, FIXED_ERRORS, RANDOMIZED_EXECUTION, DETAILED_EXECUTION
 	}
 
 	public enum WorkloadToUse {
@@ -105,7 +106,10 @@ public class ExecutionBuilder {
 			break;
 		case RANDOMIZED_EXECUTION:
 			sb.append("random_");
-		default:
+		case ONE_EXECUTION:
+			break;
+		case DETAILED_EXECUTION:
+			sb.append("detailed_");
 			break;
 		}
 
@@ -155,8 +159,11 @@ public class ExecutionBuilder {
 		case RANDOMIZED_EXECUTION:
 			return new RandomizedExecutionsStatistics();
 		case ONE_EXECUTION:
-		default:
 			return new OneExecutionStatistics();
+		case DETAILED_EXECUTION:
+			return new DetailedExecutionStatistics();
+		default:
+			return null;
 		}
 	}
 

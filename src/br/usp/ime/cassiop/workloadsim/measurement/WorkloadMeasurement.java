@@ -24,8 +24,7 @@ public class WorkloadMeasurement implements MeasurementModule {
 
 		Measurement currentMeasure = new Measurement();
 
-		List<VirtualMachine> demand = workload.getDemand(currentTime
-				- workload.getTimeInterval());
+		List<VirtualMachine> demand = workload.getDemand(currentTime);
 
 		Map<String, VirtualMachine> actualDemand = new HashMap<String, VirtualMachine>();
 

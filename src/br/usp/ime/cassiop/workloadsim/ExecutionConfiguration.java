@@ -1,5 +1,7 @@
 package br.usp.ime.cassiop.workloadsim;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,8 @@ public class ExecutionConfiguration {
 	private Environment environment = null;
 
 	private Map<String, Object> parameters = null;
+
+	private String fileSuffix = "";
 
 	public ExecutionConfiguration() {
 		parameters = new HashMap<String, Object>();
@@ -72,17 +76,20 @@ public class ExecutionConfiguration {
 		long currentTime = workload.getInitialTime();
 		long lastTime = workload.getLastTime();
 
+		statisticsModule.initialize();
+
 		while (currentTime <= lastTime) {
 			// new consolidation status
 			virtualizationManager.clear();
+
 			demand = forecastingModule.getPredictions(currentTime);
 			placementModule.setDemand(demand);
 			placementModule.consolidateAll();
 
+			statisticsModule.generateStatistics(currentTime);
+
 			// some time after
 			currentTime += timeInterval;
-
-			statisticsModule.generateStatistics(currentTime);
 		}
 	}
 
@@ -117,6 +124,15 @@ public class ExecutionConfiguration {
 			parametersOk = false;
 		}
 		return parametersOk;
+	}
+
+	public void addToFileName(String suffix) {
+		String strPath = ((Path) parameters
+				.get(Constants.PARAMETER_STATISTICS_FILE)).toString();
+		this.setParameter(Constants.PARAMETER_STATISTICS_FILE, Paths
+				.get(strPath.replace(fileSuffix + ".csv", suffix + ".csv")));
+
+		fileSuffix = suffix;
 	}
 
 	public void setParameter(String name, Object value) {

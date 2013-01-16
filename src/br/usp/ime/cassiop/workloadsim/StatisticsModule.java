@@ -50,6 +50,8 @@ public abstract class StatisticsModule implements Parametrizable {
 
 	public abstract void generateStatistics(long currentTime) throws Exception;
 
+	public abstract void initialize() throws Exception;
+
 	@Override
 	public void setParameters(Map<String, Object> parameters) throws Exception {
 		Object o = null;

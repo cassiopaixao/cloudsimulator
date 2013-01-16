@@ -59,8 +59,6 @@ public class FixedErrosExecutionsStatistics extends StatisticsModule {
 		}
 		
 		super.setParameters(parameters);
-		
-		initialize();
 	}
 
 	public void initialize() throws Exception {
@@ -144,8 +142,7 @@ public class FixedErrosExecutionsStatistics extends StatisticsModule {
 		// PMs used
 
 		StringBuilder sb = new StringBuilder();
-		if (currentTime == workload.getInitialTime()
-				+ workload.getTimeInterval()) {
+		if (currentTime == workload.getInitialTime()) {
 			sb.append(NEW_LINE);
 			sb.append(executionIdentifier).append(DELIMITER);
 		}
@@ -164,8 +161,7 @@ public class FixedErrosExecutionsStatistics extends StatisticsModule {
 		// SLA Violations
 
 		sb = new StringBuilder();
-		if (currentTime == workload.getInitialTime()
-				+ workload.getTimeInterval()) {
+		if (currentTime == workload.getInitialTime()) {
 			sb.append(NEW_LINE);
 			sb.append(executionIdentifier).append(DELIMITER);
 		}

@@ -11,7 +11,12 @@ import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
 public class GoogleCluster implements Environment {
-	private Map<PhysicalMachine, MachineStatus> environment = null;
+	private Map<PhysicalMachine, MachineStatus> environmentStatus = null;
+
+	public Map<PhysicalMachine, MachineStatus> getEnvironmentStatus() {
+		return environmentStatus;
+	}
+
 	private double environmentMultiplier = 1.0;
 
 	public GoogleCluster() {
@@ -19,7 +24,7 @@ public class GoogleCluster implements Environment {
 	}
 
 	private void initialize() {
-		environment = new HashMap<PhysicalMachine, MachineStatus>();
+		environmentStatus = new HashMap<PhysicalMachine, MachineStatus>();
 
 		// NumberOfMachines CPUs Memory
 		// 6732 0.50 0.50
@@ -59,7 +64,7 @@ public class GoogleCluster implements Environment {
 		pm.setCapacity(ResourceType.CPU, cpuCapacity);
 		pm.setCapacity(ResourceType.MEMORY, memoryCapacity);
 
-		environment.put(pm, status);
+		environmentStatus.put(pm, status);
 	}
 
 	/*
@@ -72,7 +77,7 @@ public class GoogleCluster implements Environment {
 	@Override
 	public PhysicalMachine getMachineOfType(PhysicalMachine pm)
 			throws Exception {
-		MachineStatus status = environment.get(pm);
+		MachineStatus status = environmentStatus.get(pm);
 		if (status == null) {
 			throw new Exception(
 					"There is no Physical Machines of this type in the environment.");
@@ -99,9 +104,9 @@ public class GoogleCluster implements Environment {
 	public List<PhysicalMachine> getAvailableMachineTypes() {
 		List<PhysicalMachine> availableMachines = new ArrayList<PhysicalMachine>();
 
-		for (PhysicalMachine pm : environment.keySet()) {
-			if (environment.get(pm).getAvailable() > environment.get(pm)
-					.getUsed()) {
+		for (PhysicalMachine pm : environmentStatus.keySet()) {
+			if (environmentStatus.get(pm).getAvailable() > environmentStatus
+					.get(pm).getUsed()) {
 				availableMachines.add(pm);
 			}
 		}
@@ -109,39 +114,9 @@ public class GoogleCluster implements Environment {
 		return availableMachines;
 	}
 
-	private class MachineStatus {
-		private int available = 0;
-		private int used = 0;
-
-		public int getAvailable() {
-			return available;
-		}
-
-		public void setAvailable(int available) {
-			this.available = available;
-		}
-
-		public int getUsed() {
-			return used;
-		}
-
-		public void useOne() throws Exception {
-			if (used == available) {
-				throw new Exception(
-						"There is no more Physical Machines of this type available.");
-			}
-			used++;
-		}
-
-		public void clear() {
-			used = 0;
-		}
-
-	}
-
 	@Override
 	public void clear() {
-		for (MachineStatus ms : environment.values()) {
+		for (MachineStatus ms : environmentStatus.values()) {
 			ms.clear();
 		}
 	}
@@ -160,6 +135,11 @@ public class GoogleCluster implements Environment {
 	private void setEnvironmentMultiplier(double environmentMultiplier) {
 		this.environmentMultiplier = environmentMultiplier;
 		initialize();
+	}
+
+	@Override
+	public Map<PhysicalMachine, MachineStatus> getPhysicalMachineStatus() {
+		return environmentStatus;
 	}
 
 }

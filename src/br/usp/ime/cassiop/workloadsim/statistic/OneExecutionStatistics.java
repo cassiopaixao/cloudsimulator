@@ -47,7 +47,7 @@ public class OneExecutionStatistics extends StatisticsModule {
 		initialize();
 	}
 
-	private void initialize() {
+	public void initialize() {
 		if (statisticsFile == null) {
 			statisticsFile = Paths.get("res/statistics.csv");
 		}

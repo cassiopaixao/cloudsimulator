@@ -101,4 +101,8 @@ public class PhysicalMachine extends Machine {
 		}
 		return 0;
 	}
+
+	public String getType() {
+		return this.toString().replace(name + ":", "");
+	}
 }
