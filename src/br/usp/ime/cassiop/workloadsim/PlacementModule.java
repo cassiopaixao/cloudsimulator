@@ -9,8 +9,6 @@ public interface PlacementModule extends Parametrizable {
 	public void setVirtualizationManager(
 			VirtualizationManager virtualizationManager);
 
-	public void setDemand(List<VirtualMachine> demand);
-
-	public void consolidateAll() throws Exception;
+	public void consolidateAll(List<VirtualMachine> demand) throws Exception;
 
 }

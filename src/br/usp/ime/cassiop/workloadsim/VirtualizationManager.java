@@ -1,6 +1,9 @@
 package br.usp.ime.cassiop.workloadsim;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -8,18 +11,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.environment.IdealCluster;
-import br.usp.ime.cassiop.workloadsim.model.PhysicalMachine;
+import br.usp.ime.cassiop.workloadsim.exceptions.ServerNotEmptyException;
+import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
+import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
 public class VirtualizationManager implements Parametrizable {
 
-	protected List<PhysicalMachine> pmList = null;
+	protected HashMap<String, Server> serverMap = null;
+
+	protected HashMap<String, VirtualMachine> vmMap = null;
+
+	private long usedServers = 0;
+
+	public HashMap<String, VirtualMachine> getActiveVirtualMachines() {
+		return vmMap;
+	}
 
 	protected Environment environment = null;
 
-	// protected Map<PhysicalMachine, Integer> environmentStatus;
+	protected StatisticsModule statisticsModule = null;
+
+	public void setStatisticsModule(StatisticsModule statisticsModule) {
+		this.statisticsModule = statisticsModule;
+	}
 
 	public Environment getEnvironment() {
 		return environment;
@@ -27,130 +44,92 @@ public class VirtualizationManager implements Parametrizable {
 
 	public void setEnvironment(Environment environment) {
 		this.environment = environment;
-
-		// environmentStatus = new HashMap<PhysicalMachine, Integer>();
-		// for (PhysicalMachine pm : environment.getMachineTypes()) {
-		// environmentStatus.put(pm, new Integer(0));
-		// }
 	}
 
 	final Logger logger = LoggerFactory.getLogger(VirtualizationManager.class);
 
 	public VirtualizationManager() {
-		pmList = new ArrayList<PhysicalMachine>();
+		serverMap = new HashMap<String, Server>();
+		vmMap = new HashMap<String, VirtualMachine>();
 		setEnvironment(new IdealCluster());
 	}
 
-	public void consolidate(VirtualMachine vm, PhysicalMachine pm)
+	public void setVmToServer(VirtualMachine vm, Server server)
 			throws Exception {
-		// TODO is there a way to optimize this test?
-		// for (PhysicalMachine m : consolidation.keySet()) {
-		// if (consolidation.get(m).contains(vm)) {
-		// migrate(vm, m, pm);
-		// return;
-		// }
-		// }
+		if (serverMap.get(server.getName()) != null
+				&& serverMap.get(server.getName()) == server) {
 
-		setVmToPm(vm, pm);
-	}
-
-	// private void migrate(VirtualMachine vm, PhysicalMachine oldPm,
-	// PhysicalMachine newPm) throws Exception {
-	// logger.info("Migrating VirtualMachine {} from {} to {}", vm.getName(),
-	// oldPm.getName(), newPm.getName());
-	//
-	// setVmToPm(vm, newPm);
-	// consolidation.get(oldPm).remove(vm);
-	// }
-
-	private void setVmToPm(VirtualMachine vm, PhysicalMachine pm)
-			throws Exception {
-		if (pmList.contains(pm)) {
-
-			if (!pm.canHost(vm)) {
+			if (!server.canHost(vm)) {
 				logger.info(
-						"Physical machine {} could be overloaded. Virtual machine {}'s demands extrapolates the pm resources' capacities",
-						pm.getName(), vm.getName());
+						"Server {} could be overloaded. Virtual machine {}'s demands extrapolates the pm resources' capacities",
+						server.getName(), vm.getName());
 			}
 
-			pm.addVirtualMachine(vm);
+			server.addVirtualMachine(vm);
 
-			// TODO count how many machines of each type is active
-			// for (PhysicalMachine pmtype : environmentStatus.keySet()) {
-			// if (pm.toString().equals(pmtype.toString())) {
-			// environmentStatus.put(pmtype, new Integer(environmentStatus
-			// .get(pmtype).intValue() + 1));
-			// }
-			// }
+			vmMap.put(vm.getName(), vm);
 
-			logger.debug(
-					"VirtualMachine {} consolidated to PhysicalMachine {}",
-					vm.getName(), pm.getName());
+			if (vm.getLastServer() != null
+					&& !vm.getLastServer().getName().equals(server.getName())) {
+				statisticsModule.addToStatisticValue(
+						Constants.STATISTIC_MIGRATIONS, 1);
+			}
 		} else {
-			throw new Exception("Unknown destination physical machine.");
+			throw new Exception("Unknown destination server.");
 		}
 	}
 
-	public List<PhysicalMachine> getActivePmList() {
-		return pmList;
+	public Collection<Server> getActiveServerList() {
+		return serverMap.values();
 	}
 
-	public PhysicalMachine getNextInactivePm(VirtualMachine vmDemand)
+	public Server getNextInactiveServer(VirtualMachine vmDemand)
 			throws Exception {
 
-		return getNextInactivePm(vmDemand, new FirstFitTypeChooser());
-
+		return getNextInactiveServer(vmDemand, new FirstFitTypeChooser());
 	}
 
-	public PhysicalMachine getNextInactivePm(VirtualMachine vmDemand,
+	public Server getNextInactiveServer(VirtualMachine vmDemand,
 			PhysicalMachineTypeChooser pmTypeChooser) throws Exception {
 
-		PhysicalMachine selectedMachine = pmTypeChooser.choosePMType(
+		Server selectedMachine = pmTypeChooser.chooseServerType(
 				environment.getAvailableMachineTypes(), vmDemand);
 
 		if (selectedMachine == null) {
 			logger.info("No more physical machines available.");
 			return null;
 		}
-		
-		PhysicalMachine pm = environment.getMachineOfType(selectedMachine);
 
-		pm.setName(Integer.toString(pmList.size() + 1));
+		Server pm = environment.getMachineOfType(selectedMachine);
+
+		pm.setName(new Long(++usedServers).toString());
 
 		logger.debug("PhysicalMachine {} activated: {}", pm.getName(),
 				pm.toString());
 
-		pmList.add(pm);
+		serverMap.put(pm.getName(), pm);
 
 		return pm;
 	}
 
-	// public Map<PhysicalMachine, Integer> getEnvironmentStatus() {
-	// return environmentStatus;
-	// }
-
 	public void clear() {
-		// for (PhysicalMachine pm : pmList) {
-		// pm.clear();
-		// }
-		// TODO "desligar" todas as máquinas?
-		pmList.clear();
+		for (Server pm : serverMap.values()) {
+			pm.clear();
+		}
 		environment.clear();
-
-		// for (PhysicalMachine pm : environmentStatus.keySet()) {
-		// environmentStatus.put(pm, new Integer(0));
-		// }
 	}
 
 	public class FirstFitTypeChooser implements PhysicalMachineTypeChooser {
 
-		public PhysicalMachine choosePMType(List<PhysicalMachine> machineTypes,
+		public Server chooseServerType(List<Server> machineTypes,
 				VirtualMachine vmDemand) {
-			PhysicalMachine selectedMachine = null;
+			Server selectedMachine = null;
 
-			for (PhysicalMachine pm : machineTypes) {
-				if (pm.canHost(vmDemand)) {
-					selectedMachine = pm;
+			Collections.sort(machineTypes);
+
+			for (Server server : machineTypes) {
+				if (server.canHost(vmDemand)) {
+					selectedMachine = server;
 					break;
 				}
 			}
@@ -158,10 +137,10 @@ public class VirtualizationManager implements Parametrizable {
 			if (selectedMachine == null) {
 				logger.info("No inactive physical machine can satisfy the virtual machine's demand. Activating the physical machine with lowest loss of performance.");
 
-				PhysicalMachine lessLossOfPerformanceMachine = null;
+				Server lessLossOfPerformanceMachine = null;
 				double lessLossOfPerformance = Double.MAX_VALUE;
 
-				for (PhysicalMachine pm : machineTypes) {
+				for (Server pm : machineTypes) {
 					if (!pm.canHost(vmDemand)) {
 						if (lossOfPerformance(pm, vmDemand) < lessLossOfPerformance) {
 							lessLossOfPerformance = lossOfPerformance(pm,
@@ -182,7 +161,7 @@ public class VirtualizationManager implements Parametrizable {
 			return selectedMachine;
 		}
 
-		private double lossOfPerformance(PhysicalMachine pm, VirtualMachine vm) {
+		private double lossOfPerformance(Server pm, VirtualMachine vm) {
 			double leavingCpu, leavingMem;
 			double sum = 0;
 			leavingCpu = pm.getFreeResource(ResourceType.CPU)
@@ -200,12 +179,65 @@ public class VirtualizationManager implements Parametrizable {
 
 	@Override
 	public void setParameters(Map<String, Object> parameters) throws Exception {
-		Object e = parameters.get(Constants.PARAMETER_ENVIRONMENT);
-		if (e instanceof Environment) {
-			setEnvironment((Environment) e);
+		Object o = parameters.get(Constants.PARAMETER_ENVIRONMENT);
+		if (o instanceof Environment) {
+			setEnvironment((Environment) o);
 		} else {
 			throw new Exception(String.format("Invalid parameter: %s",
 					Constants.PARAMETER_ENVIRONMENT));
 		}
+
+		o = parameters.get(Constants.PARAMETER_STATISTICS_MODULE);
+		if (o instanceof StatisticsModule) {
+			setStatisticsModule((StatisticsModule) o);
+		} else {
+			throw new Exception(String.format("Invalid parameter: %s",
+					Constants.PARAMETER_STATISTICS_MODULE));
+		}
+	}
+
+	public void deallocateFinishedVms(List<VirtualMachine> demand,
+			long currentTime) throws Exception {
+		Map<String, Object> keepRunning = new HashMap<String, Object>(
+				demand.size());
+		for (VirtualMachine vm : demand) {
+			keepRunning.put(vm.getName(), null);
+		}
+
+		List<String> activeVms = new ArrayList<String>(vmMap.keySet());
+
+		VirtualMachine vm = null;
+
+		// for each vm already allocated
+		for (String vmName : activeVms) {
+			// if it isn't in the new demands' list
+			if (!keepRunning.containsKey(vmName)) {
+				vm = vmMap.get(vmName);
+				// and it's endTime was reached
+				if (vm.getEndTime() <= currentTime) {
+					// should deallocate the resources.
+					deallocate(vm);
+				}
+			}
+		}
+	}
+
+	public void deallocate(VirtualMachine vm) throws Exception {
+		Server currentServer = vm.getCurrentServer();
+
+		currentServer.removeVirtualMachine(vm);
+		vmMap.remove(vm.getName());
+	}
+
+	public void turnOffServer(Server server) throws Exception {
+		if (!server.getVirtualMachines().isEmpty()) {
+			throw new ServerNotEmptyException();
+		}
+		if (serverMap.get(server.getName()) == null) {
+			throw new UnknownServerException();
+		}
+
+		serverMap.remove(server.getName());
+		environment.turnOffMachineOfType(server);
 	}
 }

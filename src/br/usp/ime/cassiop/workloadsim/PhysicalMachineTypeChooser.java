@@ -2,11 +2,11 @@ package br.usp.ime.cassiop.workloadsim;
 
 import java.util.List;
 
-import br.usp.ime.cassiop.workloadsim.model.PhysicalMachine;
+import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 
 public interface PhysicalMachineTypeChooser {
-	public PhysicalMachine choosePMType(
-			List<PhysicalMachine> availableMachineTypes, VirtualMachine vmDemand);
+	public Server chooseServerType(List<Server> availableMachineTypes,
+			VirtualMachine vmDemand);
 
 }

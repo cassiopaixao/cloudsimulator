@@ -6,9 +6,9 @@ import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 
 public interface ForecastingModule extends Parametrizable {
 
-	public abstract List<VirtualMachine> getPredictions(long currentTime)
+	public List<VirtualMachine> getPredictions(long currentTime)
 			throws Exception;
 
-	public abstract long getTimeOfLastPredictions();
+	public long getTimeOfLastPredictions();
 
 }

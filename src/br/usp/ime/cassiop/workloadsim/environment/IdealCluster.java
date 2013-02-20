@@ -6,21 +6,21 @@ import java.util.List;
 import java.util.Map;
 
 import br.usp.ime.cassiop.workloadsim.Environment;
-import br.usp.ime.cassiop.workloadsim.model.PhysicalMachine;
+import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 
 public class IdealCluster implements Environment {
 
-	private PhysicalMachine referenceMachine = null;
+	private Server referenceMachine = null;
 
-	private Map<PhysicalMachine, MachineStatus> environmentStatus = null;
+	private Map<Server, MachineStatus> environmentStatus = null;
 
 	public IdealCluster() {
-		referenceMachine = new PhysicalMachine();
+		referenceMachine = new Server();
 		referenceMachine.setCapacity(ResourceType.CPU, 1.0);
 		referenceMachine.setCapacity(ResourceType.MEMORY, 1.0);
 
-		environmentStatus = new HashMap<PhysicalMachine, MachineStatus>(1);
+		environmentStatus = new HashMap<Server, MachineStatus>(1);
 		environmentStatus.put(referenceMachine, new MachineStatus(
 				Integer.MAX_VALUE, 0));
 	}
@@ -33,8 +33,7 @@ public class IdealCluster implements Environment {
 	 * (br.usp.ime.cassiop.workloadsim.model.PhysicalMachine)
 	 */
 	@Override
-	public PhysicalMachine getMachineOfType(PhysicalMachine pm)
-			throws Exception {
+	public Server getMachineOfType(Server pm) throws Exception {
 		MachineStatus status = environmentStatus.get(pm);
 		if (status == null) {
 			throw new Exception(
@@ -43,7 +42,7 @@ public class IdealCluster implements Environment {
 
 		status.useOne();
 
-		PhysicalMachine newPm = new PhysicalMachine();
+		Server newPm = new Server();
 
 		newPm.setCapacity(ResourceType.CPU, pm.getCapacity(ResourceType.CPU));
 		newPm.setCapacity(ResourceType.MEMORY,
@@ -59,9 +58,8 @@ public class IdealCluster implements Environment {
 	 * br.usp.ime.cassiop.workloadsim.environment.Environment#getMachineTypes()
 	 */
 	@Override
-	public List<PhysicalMachine> getAvailableMachineTypes() {
-		List<PhysicalMachine> availableMachines = new ArrayList<PhysicalMachine>(
-				1);
+	public List<Server> getAvailableMachineTypes() {
+		List<Server> availableMachines = new ArrayList<Server>(1);
 
 		availableMachines.add(referenceMachine);
 
@@ -81,7 +79,17 @@ public class IdealCluster implements Environment {
 	}
 
 	@Override
-	public Map<PhysicalMachine, MachineStatus> getPhysicalMachineStatus() {
+	public Map<Server, MachineStatus> getEnvironmentStatus() {
 		return environmentStatus;
+	}
+
+	@Override
+	public void turnOffMachineOfType(Server server) throws Exception {
+		// TODO Auto-generated method stub
+		for (Server sv : environmentStatus.keySet()) {
+			if (server.getType() == sv.getType()) {
+				environmentStatus.get(sv).turnOffOne();
+			}
+		}
 	}
 }

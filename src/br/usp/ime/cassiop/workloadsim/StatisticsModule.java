@@ -1,7 +1,8 @@
 package br.usp.ime.cassiop.workloadsim;
 
+import java.io.File;
 import java.nio.charset.Charset;
-import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 
 import br.usp.ime.cassiop.workloadsim.util.Constants;
@@ -12,14 +13,17 @@ public abstract class StatisticsModule implements Parametrizable {
 	protected MeasurementModule measurementModule = null;
 	protected ForecastingModule forecastingModule = null;
 
-	protected Path statisticsFile = null;
+//	protected Path statisticsFile = null;
+	protected File statisticsFile = null;
 	protected static final Charset charset = Charset.forName("UTF-8");
 
-	public Path getStatisticsFile() {
+	protected Map<String, Integer> statistics = null;
+
+	public File getStatisticsFile() {
 		return statisticsFile;
 	}
 
-	public void setStatisticsFile(Path statisticsFile) {
+	public void setStatisticsFile(File statisticsFile) {
 		this.statisticsFile = statisticsFile;
 	}
 
@@ -50,7 +54,28 @@ public abstract class StatisticsModule implements Parametrizable {
 
 	public abstract void generateStatistics(long currentTime) throws Exception;
 
-	public abstract void initialize() throws Exception;
+	public void initialize() throws Exception {
+		statistics = new HashMap<String, Integer>();
+	}
+
+	public void setStatisticValue(String name, int value) {
+		statistics.put(name, new Integer(value));
+	}
+
+	public void addToStatisticValue(String name, int value) {
+		if (statistics.containsKey(name)) {
+			statistics.put(name, new Integer(statistics.get(name).intValue()
+					+ value));
+		} else {
+			setStatisticValue(name, value);
+		}
+	}
+
+	public void clearStatistics() {
+		for (String key : statistics.keySet()) {
+			statistics.put(key, new Integer(0));
+		}
+	}
 
 	@Override
 	public void setParameters(Map<String, Object> parameters) throws Exception {
@@ -79,13 +104,14 @@ public abstract class StatisticsModule implements Parametrizable {
 			throw new Exception(String.format("Invalid parameter: %s",
 					Constants.PARAMETER_MEASUREMENT_MODULE));
 		}
-		
+
 		o = parameters.get(Constants.PARAMETER_STATISTICS_FILE);
-		if (o instanceof Path) {
-			setStatisticsFile((Path) o);
+		if (o instanceof File) {
+			setStatisticsFile((File) o);
 		} else {
 			throw new Exception(String.format("Invalid parameter: %s",
 					Constants.PARAMETER_STATISTICS_FILE));
 		}
 	}
+
 }

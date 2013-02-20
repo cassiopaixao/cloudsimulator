@@ -1,19 +1,18 @@
 package br.usp.ime.cassiop.workloadsim.statistic;
 
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.List;
 
 import br.usp.ime.cassiop.workloadsim.Measurement;
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.Workload;
-import br.usp.ime.cassiop.workloadsim.model.PhysicalMachine;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
+import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.MathUtils;
 import br.usp.ime.cassiop.workloadsim.workload.GoogleWorkload;
@@ -23,16 +22,16 @@ public class RandomizedExecutionsStatistics extends StatisticsModule {
 	private static final String DELIMITER = "\t";
 	private static final String NEW_LINE = "\n";
 
-	private List<PhysicalMachine> physicalMachines = null;
+	private Collection<Server> physicalMachines = null;
 
 	private Measurement measurement = null;
 
-	private Path statisticsPMsFile = null;
-	private Path statisticsSlaFile = null;
+	private File statisticsPMsFile = null;
+	private File statisticsSlaFile = null;
 
 	private Workload workload = null;
 
-	public void setStatisticsFile(Path statisticsFile) {
+	public void setStatisticsFile(File statisticsFile) {
 		super.setStatisticsFile(statisticsFile);
 		try {
 			initialize();
@@ -42,13 +41,15 @@ public class RandomizedExecutionsStatistics extends StatisticsModule {
 	}
 
 	public void initialize() throws Exception {
+		super.initialize();
+
 		if (statisticsFile == null) {
-			statisticsFile = Paths.get("res/statistics.csv");
+			statisticsFile = new File("res/statistics.csv");
 		}
 
-		statisticsPMsFile = Paths.get(statisticsFile.toString().replace(".csv",
+		statisticsPMsFile = new File(statisticsFile.toString().replace(".csv",
 				"Pms.csv"));
-		statisticsSlaFile = Paths.get(statisticsFile.toString().replace(".csv",
+		statisticsSlaFile = new File(statisticsFile.toString().replace(".csv",
 				"Sla.csv"));
 
 		long time, initialTime, timeInterval, lastTime;
@@ -64,9 +65,13 @@ public class RandomizedExecutionsStatistics extends StatisticsModule {
 			sb.append(time).append(DELIMITER);
 		}
 
-		try (BufferedWriter writer = Files.newBufferedWriter(statisticsPMsFile,
-				charset, StandardOpenOption.WRITE,
-				StandardOpenOption.CREATE_NEW)) {
+		// try (BufferedWriter writer =
+		// Files.newBufferedWriter(statisticsPMsFile,
+		// charset, StandardOpenOption.WRITE,
+		// StandardOpenOption.CREATE_NEW)) {
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(
+					statisticsPMsFile));
 			writer.write(sb.toString());
 
 			writer.flush();
@@ -75,9 +80,13 @@ public class RandomizedExecutionsStatistics extends StatisticsModule {
 			System.err.format("IOException: %s%n", x);
 		}
 
-		try (BufferedWriter writer = Files.newBufferedWriter(statisticsSlaFile,
-				charset, StandardOpenOption.WRITE,
-				StandardOpenOption.CREATE_NEW)) {
+		// try (BufferedWriter writer =
+		// Files.newBufferedWriter(statisticsSlaFile,
+		// charset, StandardOpenOption.WRITE,
+		// StandardOpenOption.CREATE_NEW)) {
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(
+					statisticsSlaFile, true));
 			writer.write(sb.toString());
 
 			writer.flush();
@@ -90,14 +99,14 @@ public class RandomizedExecutionsStatistics extends StatisticsModule {
 
 	@Override
 	public void generateStatistics(long currentTime) throws Exception {
-		physicalMachines = virtualizationManager.getActivePmList();
+		physicalMachines = virtualizationManager.getActiveServerList();
 
 		measurement = measurementModule.measureSystem(currentTime);
 
 		long slaViolations = 0;
 		long pmsUsed = 0;
 
-		for (PhysicalMachine pm : physicalMachines) {
+		for (Server pm : physicalMachines) {
 			if (isPmActive(pm)) {
 				pmsUsed++;
 			}
@@ -127,8 +136,12 @@ public class RandomizedExecutionsStatistics extends StatisticsModule {
 		}
 		sb.append(pmsUsed).append(DELIMITER);
 
-		try (BufferedWriter writer = Files.newBufferedWriter(statisticsPMsFile,
-				charset, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
+		// try (BufferedWriter writer =
+		// Files.newBufferedWriter(statisticsPMsFile,
+		// charset, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(
+					statisticsPMsFile, true));
 			writer.write(sb.toString());
 
 			writer.flush();
@@ -148,8 +161,12 @@ public class RandomizedExecutionsStatistics extends StatisticsModule {
 		}
 		sb.append(slaViolations).append(DELIMITER);
 
-		try (BufferedWriter writer = Files.newBufferedWriter(statisticsSlaFile,
-				charset, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
+		// try (BufferedWriter writer =
+		// Files.newBufferedWriter(statisticsSlaFile,
+		// charset, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(
+					statisticsSlaFile, true));
 			writer.write(sb.toString());
 
 			writer.flush();
@@ -159,7 +176,7 @@ public class RandomizedExecutionsStatistics extends StatisticsModule {
 		}
 	}
 
-	private boolean isPmOverloaded(PhysicalMachine pm) {
+	private boolean isPmOverloaded(Server pm) {
 		List<VirtualMachine> vms = pm.getVirtualMachines();
 
 		double sum;
@@ -175,7 +192,7 @@ public class RandomizedExecutionsStatistics extends StatisticsModule {
 		return false;
 	}
 
-	private boolean isPmActive(PhysicalMachine pm) {
+	private boolean isPmActive(Server pm) {
 		return !pm.getVirtualMachines().isEmpty();
 	}
 }

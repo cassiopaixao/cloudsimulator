@@ -9,16 +9,22 @@ import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.PhysicalMachineTypeChooser;
 import br.usp.ime.cassiop.workloadsim.PlacementModule;
+import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
-import br.usp.ime.cassiop.workloadsim.model.PhysicalMachine;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
+import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
 public class BestFitDecreasing implements PlacementModule {
-	private List<VirtualMachine> demand = null;
 
 	private VirtualizationManager virtualizationManager = null;
+
+	private StatisticsModule statisticsModule = null;
+
+	public void setStatisticsModule(StatisticsModule statisticsModule) {
+		this.statisticsModule = statisticsModule;
+	}
 
 	final Logger logger = LoggerFactory.getLogger(BestFitDecreasing.class);
 
@@ -38,21 +44,10 @@ public class BestFitDecreasing implements PlacementModule {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * br.ime.usp.cassiop.workloadsim.PlacementModule#setDemand(java.util.List)
-	 */
-	@Override
-	public void setDemand(List<VirtualMachine> demand) {
-		this.demand = demand;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
 	 * @see br.ime.usp.cassiop.workloadsim.PlacementModule#consolidateAll()
 	 */
 	@Override
-	public void consolidateAll() throws Exception {
+	public void consolidateAll(List<VirtualMachine> demand) throws Exception {
 		if (virtualizationManager == null) {
 			throw new Exception("VirtualizationManager is not set.");
 		}
@@ -60,20 +55,19 @@ public class BestFitDecreasing implements PlacementModule {
 			throw new Exception("Demand is not set.");
 		}
 
-		List<PhysicalMachine> pms = virtualizationManager.getActivePmList();
-
 		// demand.sort desc
 		Collections.sort(demand);
 		Collections.reverse(demand);
 
-		PhysicalMachine bestFitPm = null;
+		Server bestFitServer = null;
 		double bestFitLeavingResource = Double.MAX_VALUE;
+		int vms_not_allocated = 0;
 
 		for (VirtualMachine vm : demand) {
-			bestFitPm = null;
+			bestFitServer = null;
 			bestFitLeavingResource = Double.MAX_VALUE;
 
-			for (PhysicalMachine pm : pms) {
+			for (Server pm : virtualizationManager.getActiveServerList()) {
 				if (pm.canHost(vm)) {
 					// TODO can optimize this? the leaving resource is
 					// calculated for every pm and every vm
@@ -82,31 +76,35 @@ public class BestFitDecreasing implements PlacementModule {
 
 					// stores the best-fit allocation
 					if (leavingResource(pm, vm) < bestFitLeavingResource) {
-						bestFitPm = pm;
+						bestFitServer = pm;
 						bestFitLeavingResource = leavingResource(pm, vm);
 					}
 
 				}
 			}
 
-			if (bestFitPm != null) {
-				virtualizationManager.consolidate(vm, bestFitPm);
+			if (bestFitServer != null) {
+				virtualizationManager.setVmToServer(vm, bestFitServer);
 			} else {
-				PhysicalMachine inactivePm = virtualizationManager
-						.getNextInactivePm(vm, new BestFitTypeChooser());
+				Server inactivePm = virtualizationManager
+						.getNextInactiveServer(vm, new BestFitTypeChooser());
 				if (inactivePm != null) {
-					virtualizationManager.consolidate(vm, inactivePm);
+					virtualizationManager.setVmToServer(vm, inactivePm);
 				} else {
 					logger.info(
 							"No inactive physical machine provided. Could not consolidate VM {}.",
 							vm.toString());
+					vms_not_allocated++;
 				}
 			}
 		}
+		statisticsModule.addToStatisticValue(
+				Constants.STATISTIC_VIRTUAL_MACHINES_NOT_ALLOCATED,
+				vms_not_allocated);
 
 	}
 
-	private double leavingResource(PhysicalMachine pm, VirtualMachine vm) {
+	public double leavingResource(Server pm, VirtualMachine vm) {
 		double leavingCpu, leavingMem;
 		leavingCpu = pm.getFreeResource(ResourceType.CPU)
 				- vm.getDemand(ResourceType.CPU);
@@ -118,16 +116,18 @@ public class BestFitDecreasing implements PlacementModule {
 
 	public class BestFitTypeChooser implements PhysicalMachineTypeChooser {
 
-		public PhysicalMachine choosePMType(List<PhysicalMachine> machineTypes,
+		public Server chooseServerType(List<Server> machineTypes,
 				VirtualMachine vmDemand) {
-			PhysicalMachine selectedMachine = null;
+			Server selectedMachine = null;
 			double leavingResource = Double.MAX_VALUE;
 
-			for (PhysicalMachine pm : machineTypes) {
-				if (pm.canHost(vmDemand)) {
-					if (leavingResource(pm, vmDemand) < leavingResource) {
-						selectedMachine = pm;
-						leavingResource = leavingResource(pm, vmDemand);
+			Collections.sort(machineTypes);
+
+			for (Server server : machineTypes) {
+				if (server.canHost(vmDemand)) {
+					if (leavingResource(server, vmDemand) < leavingResource) {
+						selectedMachine = server;
+						leavingResource = leavingResource(server, vmDemand);
 					}
 				}
 			}
@@ -135,7 +135,7 @@ public class BestFitDecreasing implements PlacementModule {
 			if (selectedMachine == null) {
 				logger.info("No inactive physical machine can satisfy the virtual machine's demand. Activating the physical machine with lowest loss of performance.");
 
-				PhysicalMachine lessLossOfPerformanceMachine = lessLossMachine(
+				Server lessLossOfPerformanceMachine = lessLossMachine(
 						machineTypes, vmDemand);
 
 				if (lessLossOfPerformanceMachine == null) {
@@ -148,12 +148,12 @@ public class BestFitDecreasing implements PlacementModule {
 			return selectedMachine;
 		}
 
-		private PhysicalMachine lessLossMachine(
-				List<PhysicalMachine> machineTypes, VirtualMachine vmDemand) {
-			PhysicalMachine lessLossOfPerformanceMachine = null;
+		private Server lessLossMachine(List<Server> machineTypes,
+				VirtualMachine vmDemand) {
+			Server lessLossOfPerformanceMachine = null;
 			double lessLossOfPerformance = Double.MAX_VALUE;
 
-			for (PhysicalMachine pm : machineTypes) {
+			for (Server pm : machineTypes) {
 				if (!pm.canHost(vmDemand)) {
 					if (lossOfPerformance(pm, vmDemand) < lessLossOfPerformance) {
 						lessLossOfPerformance = lossOfPerformance(pm, vmDemand);
@@ -164,7 +164,7 @@ public class BestFitDecreasing implements PlacementModule {
 			return lessLossOfPerformanceMachine;
 		}
 
-		private double lossOfPerformance(PhysicalMachine pm, VirtualMachine vm) {
+		private double lossOfPerformance(Server pm, VirtualMachine vm) {
 			double leavingCpu, leavingMem;
 			double sum = 0;
 			leavingCpu = pm.getFreeResource(ResourceType.CPU)
@@ -182,12 +182,20 @@ public class BestFitDecreasing implements PlacementModule {
 
 	@Override
 	public void setParameters(Map<String, Object> parameters) throws Exception {
-		Object e = parameters.get(Constants.PARAMETER_VIRTUALIZATION_MANAGER);
-		if (e instanceof VirtualizationManager) {
-			setVirtualizationManager((VirtualizationManager) e);
+		Object o = parameters.get(Constants.PARAMETER_VIRTUALIZATION_MANAGER);
+		if (o instanceof VirtualizationManager) {
+			setVirtualizationManager((VirtualizationManager) o);
 		} else {
 			throw new Exception(String.format("Invalid parameter: %s",
 					Constants.PARAMETER_VIRTUALIZATION_MANAGER));
+		}
+
+		o = parameters.get(Constants.PARAMETER_STATISTICS_MODULE);
+		if (o instanceof StatisticsModule) {
+			setStatisticsModule((StatisticsModule) o);
+		} else {
+			throw new Exception(String.format("Invalid parameter: %s",
+					Constants.PARAMETER_STATISTICS_MODULE));
 		}
 	}
 }

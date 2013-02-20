@@ -1,7 +1,6 @@
 package br.usp.ime.cassiop.workloadsim;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.File;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,13 +8,20 @@ import org.slf4j.LoggerFactory;
 import br.usp.ime.cassiop.workloadsim.environment.GoogleCluster;
 import br.usp.ime.cassiop.workloadsim.environment.IdealCluster;
 import br.usp.ime.cassiop.workloadsim.forecasting.ErrorInjectorForecasting;
+import br.usp.ime.cassiop.workloadsim.forecasting.MeasurementsMeanForecasting;
 import br.usp.ime.cassiop.workloadsim.forecasting.WorkloadForecasting;
 import br.usp.ime.cassiop.workloadsim.measurement.WorkloadMeasurement;
+import br.usp.ime.cassiop.workloadsim.migrationcontrol.KhannaMigrationControl;
+import br.usp.ime.cassiop.workloadsim.migrationcontrol.MigrateIfChange;
+import br.usp.ime.cassiop.workloadsim.migrationcontrol.MigrateIfChangeAndServerBecomesOverloaded;
+import br.usp.ime.cassiop.workloadsim.migrationcontrol.NoMigrationControl;
 import br.usp.ime.cassiop.workloadsim.placement.BestFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.FirstFitDecreasing;
+import br.usp.ime.cassiop.workloadsim.placement.KhannaPlacement;
 import br.usp.ime.cassiop.workloadsim.placement.WorstFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.statistic.DetailedExecutionStatistics;
 import br.usp.ime.cassiop.workloadsim.statistic.FixedErrosExecutionsStatistics;
+import br.usp.ime.cassiop.workloadsim.statistic.MigrationStatistics;
 import br.usp.ime.cassiop.workloadsim.statistic.OneExecutionStatistics;
 import br.usp.ime.cassiop.workloadsim.statistic.RandomizedExecutionsStatistics;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
@@ -25,11 +31,11 @@ import br.usp.ime.cassiop.workloadsim.workload.GoogleWorkload;
 
 public class ExecutionBuilder {
 	public enum PlacementType {
-		FIRST_FIT, BEST_FIT, WORST_FIT
+		FIRST_FIT, BEST_FIT, WORST_FIT, KHANNA
 	};
 
 	public enum StatisticsType {
-		ONE_EXECUTION, FIXED_ERRORS, RANDOMIZED_EXECUTION, DETAILED_EXECUTION
+		ONE_EXECUTION, FIXED_ERRORS, RANDOMIZED_EXECUTION, DETAILED_EXECUTION, MIGRATION_STATISTICS
 	}
 
 	public enum WorkloadToUse {
@@ -41,43 +47,99 @@ public class ExecutionBuilder {
 	}
 
 	public enum ForecasterToUse {
-		WORKLOAD, WORKLOAD_ERROR_INJECTOR
+		WORKLOAD, WORKLOAD_ERROR_INJECTOR, MEASUREMENTS_MEAN
 	}
 
 	public enum MeasurementToUse {
 		WORKLOAD
 	}
 
+	public enum MigrationControlToUse {
+		NONE, MIGRATE_IF_CHANGE, MIGRATE_IF_CHANGE_AND_SERVER_BECOMES_OVERLOADED, KHANNA
+	}
+
+	private PlacementType placement = null;
+	private StatisticsType statistics = null;
+	private WorkloadToUse workload = null;
+	private EnvironmentToUse environment = null;
+	private ForecasterToUse forecaster = null;
+	private MeasurementToUse measurement = null;
+	private MigrationControlToUse migration = null;
+
+	public void setMigrationController(MigrationControlToUse migration) {
+		executionConfiguration.setParameter(
+				Constants.PARAMETER_MIGRATION_CONTROLLER,
+				getMigrationController(migration));
+		this.migration = migration;
+	}
+
+	private ExecutionConfiguration executionConfiguration = null;
+
 	static final Logger logger = LoggerFactory
 			.getLogger(ExecutionBuilder.class);
 
-	public static ExecutionConfiguration build(EnvironmentToUse environment,
-			ForecasterToUse forecasting, PlacementType placement,
-			StatisticsType statistics, WorkloadToUse workload) {
+	public ExecutionBuilder() {
+		executionConfiguration = new ExecutionConfiguration();
 
-		ExecutionConfiguration execution = new ExecutionConfiguration();
-
-		execution.setEnvironment(getEnvironment(environment));
-		execution.setVirtualizationManager(new VirtualizationManager());
-		execution.setPlacementModule(getPlacementModule(placement));
-		execution.setStatisticsModule(getStatisticsModule(statistics));
-		execution
-				.setMeasurementModule(getMeasurementModule(MeasurementToUse.WORKLOAD));
-		execution.setForecastingModule(getForecastingModule(forecasting));
-
-		configureWorkload(execution, workload);
-
-		execution.setParameter(
-				Constants.PARAMETER_STATISTICS_FILE,
-				buildStatisticsFilename(environment, placement, statistics,
-						workload));
-
-		return execution;
+		executionConfiguration
+				.setVirtualizationManager(new VirtualizationManager());
 	}
 
-	private static Path buildStatisticsFilename(EnvironmentToUse environment,
-			PlacementType placement, StatisticsType statistics,
-			WorkloadToUse workload) {
+	public ExecutionConfiguration build() {
+		executionConfiguration.setParameter(
+				Constants.PARAMETER_STATISTICS_FILE, buildStatisticsFilename());
+
+		return executionConfiguration;
+	}
+
+	public void setEnvironment(EnvironmentToUse environment) {
+		executionConfiguration.setParameter(Constants.PARAMETER_ENVIRONMENT,
+				getEnvironment(environment));
+		this.environment = environment;
+	}
+
+	public void setWorkload(WorkloadToUse workload) {
+		executionConfiguration.setParameter(Constants.PARAMETER_WORKLOAD,
+				getWorkload(workload));
+		this.workload = workload;
+	}
+
+	public void setVirtualizationManager(
+			VirtualizationManager virtualizationManager) {
+		executionConfiguration.setParameter(
+				Constants.PARAMETER_VIRTUALIZATION_MANAGER,
+				virtualizationManager);
+	}
+
+	public void setPlacementModule(PlacementType placement) {
+		executionConfiguration.setParameter(
+				Constants.PARAMETER_PLACEMENT_MODULE,
+				getPlacementModule(placement));
+		this.placement = placement;
+	}
+
+	public void setStatisticsModule(StatisticsType statistics) {
+		executionConfiguration.setParameter(
+				Constants.PARAMETER_STATISTICS_MODULE,
+				getStatisticsModule(statistics));
+		this.statistics = statistics;
+	}
+
+	public void setMeasurementModule(MeasurementToUse measurement) {
+		executionConfiguration.setParameter(
+				Constants.PARAMETER_MEASUREMENT_MODULE,
+				getMeasurementModule(measurement));
+		this.measurement = measurement;
+	}
+
+	public void setForecastingModule(ForecasterToUse forecaster) {
+		executionConfiguration.setParameter(
+				Constants.PARAMETER_FORECASTING_MODULE,
+				getForecastingModule(forecaster));
+		this.forecaster = forecaster;
+	}
+
+	private File buildStatisticsFilename() {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("res/statistics_");
@@ -89,6 +151,32 @@ public class ExecutionBuilder {
 			sb.append("googlecluster_");
 		}
 
+		switch (forecaster) {
+		case MEASUREMENTS_MEAN:
+			sb.append("mean_");
+			break;
+		case WORKLOAD:
+			sb.append("workload_");
+			break;
+		case WORKLOAD_ERROR_INJECTOR:
+			sb.append("errorinjector_");
+			break;
+		}
+
+		switch (migration) {
+		case MIGRATE_IF_CHANGE:
+			sb.append("ifchange_");
+			break;
+		case MIGRATE_IF_CHANGE_AND_SERVER_BECOMES_OVERLOADED:
+			sb.append("ifoverload_");
+			break;
+		case KHANNA:
+			sb.append("khanna_");
+			break;
+		case NONE:
+			break;
+		}
+
 		switch (placement) {
 		case FIRST_FIT:
 			sb.append("ffd_");
@@ -98,6 +186,9 @@ public class ExecutionBuilder {
 			break;
 		case WORST_FIT:
 			sb.append("wfd_");
+			break;
+		case KHANNA:
+			sb.append("kanna_");
 		}
 
 		switch (statistics) {
@@ -110,6 +201,9 @@ public class ExecutionBuilder {
 			break;
 		case DETAILED_EXECUTION:
 			sb.append("detailed_");
+			break;
+		case MIGRATION_STATISTICS:
+			sb.append("migration_");
 			break;
 		}
 
@@ -128,31 +222,30 @@ public class ExecutionBuilder {
 
 		sb.append(".csv");
 
-		return Paths.get(sb.toString());
+		return new File(sb.toString());
 	}
 
-	private static MeasurementModule getMeasurementModule(
-			MeasurementToUse measurement) {
+	private MeasurementModule getMeasurementModule(MeasurementToUse measurement) {
 		switch (measurement) {
 		case WORKLOAD:
-		default:
 			return new WorkloadMeasurement();
 		}
+		return new WorkloadMeasurement();
 	}
 
-	private static ForecastingModule getForecastingModule(
-			ForecasterToUse forecasting) {
+	private ForecastingModule getForecastingModule(ForecasterToUse forecasting) {
 		switch (forecasting) {
 		case WORKLOAD_ERROR_INJECTOR:
 			return new ErrorInjectorForecasting();
 		case WORKLOAD:
-		default:
 			return new WorkloadForecasting();
+		case MEASUREMENTS_MEAN:
+			return new MeasurementsMeanForecasting();
 		}
+		return new WorkloadForecasting();
 	}
 
-	private static StatisticsModule getStatisticsModule(
-			StatisticsType statistics) {
+	private StatisticsModule getStatisticsModule(StatisticsType statistics) {
 		switch (statistics) {
 		case FIXED_ERRORS:
 			return new FixedErrosExecutionsStatistics();
@@ -162,58 +255,69 @@ public class ExecutionBuilder {
 			return new OneExecutionStatistics();
 		case DETAILED_EXECUTION:
 			return new DetailedExecutionStatistics();
-		default:
-			return null;
+		case MIGRATION_STATISTICS:
+			return new MigrationStatistics();
 		}
+		return null;
 	}
 
-	private static PlacementModule getPlacementModule(PlacementType placement) {
+	private PlacementModule getPlacementModule(PlacementType placement) {
 		switch (placement) {
 		case BEST_FIT:
 			return new BestFitDecreasing();
 		case WORST_FIT:
 			return new WorstFitDecreasing();
 		case FIRST_FIT:
-		default:
 			return new FirstFitDecreasing();
+		case KHANNA:
+			return new KhannaPlacement();
 		}
+		return new FirstFitDecreasing();
 	}
 
-	private static Environment getEnvironment(EnvironmentToUse environment) {
+	private Environment getEnvironment(EnvironmentToUse environment) {
 		switch (environment) {
 		case IDEAL:
 			return new IdealCluster();
 		case GOOGLE:
 			return new GoogleCluster();
-		default:
-			logger.info("Could not instantiate the environment {}",
-					environment.toString());
-			return null;
 		}
+		logger.info("Could not instantiate the environment {}",
+				environment.toString());
+		return null;
 	}
 
-	private static void configureWorkload(ExecutionConfiguration execution,
-			WorkloadToUse workload) {
+	private MigrationController getMigrationController(
+			MigrationControlToUse migration) {
+		switch (migration) {
+		case NONE:
+			return new NoMigrationControl();
+		case MIGRATE_IF_CHANGE:
+			return new MigrateIfChange();
+		case MIGRATE_IF_CHANGE_AND_SERVER_BECOMES_OVERLOADED:
+			return new MigrateIfChangeAndServerBecomesOverloaded();
+		case KHANNA:
+			return new KhannaMigrationControl();
+		}
+		return new NoMigrationControl();
+	}
+
+	private Workload getWorkload(WorkloadToUse workload) {
 		try {
 			switch (workload) {
 			case GOOGLE_TRACE_1:
-				execution.setParameter(Constants.PARAMETER_WORKLOAD,
-						GoogleWorkload.build());
-				break;
+				return GoogleWorkload.build();
 			case GOOGLE_TRACE_2:
-				execution.setParameter(Constants.PARAMETER_WORKLOAD,
-						GoogleClusterdataWorkload.build());
-				break;
+				return GoogleClusterdataWorkload.build();
 			case GOOGLE_TRACE_FILE_2:
-				execution.setParameter(Constants.PARAMETER_WORKLOAD,
-						GoogleClusterdataFileWorkload.build());
-				break;
+				return GoogleClusterdataFileWorkload.build();
 			case NONE:
-				break;
+				return null;
 			}
 		} catch (Exception ex) {
 			logger.info("Could not instantiate the workload {}",
 					workload.toString());
 		}
+		return null;
 	}
 }

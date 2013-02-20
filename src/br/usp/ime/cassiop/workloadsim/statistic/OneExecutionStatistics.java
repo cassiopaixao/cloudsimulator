@@ -1,24 +1,23 @@
 package br.usp.ime.cassiop.workloadsim.statistic;
 
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import br.usp.ime.cassiop.workloadsim.Measurement;
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
-import br.usp.ime.cassiop.workloadsim.model.PhysicalMachine;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
+import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.MathUtils;
 
 public class OneExecutionStatistics extends StatisticsModule {
-	List<PhysicalMachine> physicalMachines = null;
+	Collection<Server> physicalMachines = null;
 
 	Measurement measurement = null;
 
@@ -31,7 +30,7 @@ public class OneExecutionStatistics extends StatisticsModule {
 	static final String DELIMITER = "\t";
 	static final String NEW_LINE = "\n";
 
-	private double getIdleResource(PhysicalMachine pm, ResourceType type) {
+	private double getIdleResource(Server pm, ResourceType type) {
 		double total = pm.getCapacity(type);
 		for (VirtualMachine vm : pm.getVirtualMachines()) {
 			total -= vm.getDemand(type);
@@ -42,14 +41,11 @@ public class OneExecutionStatistics extends StatisticsModule {
 		return 0;
 	}
 
-	public void setStatisticsFile(Path statisticsFile) {
-		super.setStatisticsFile(statisticsFile);
-		initialize();
-	}
+	public void initialize() throws Exception {
+		super.initialize();
 
-	public void initialize() {
 		if (statisticsFile == null) {
-			statisticsFile = Paths.get("res/statistics.csv");
+			statisticsFile = new File("res/statistics.csv");
 		}
 
 		totalSlaViolations = new HashMap<String, Double>();
@@ -62,9 +58,12 @@ public class OneExecutionStatistics extends StatisticsModule {
 		sb.append("slaViolations");// .append(DELIMITER);
 		// sb.append("totalIdleCpu").append(DELIMITER);
 		// sb.append("totalIdleMem");
-		try (BufferedWriter writer = Files.newBufferedWriter(statisticsFile,
-				charset, StandardOpenOption.WRITE,
-				StandardOpenOption.CREATE_NEW)) {
+		// try (BufferedWriter writer = Files.newBufferedWriter(statisticsFile,
+		// charset, StandardOpenOption.WRITE,
+		// StandardOpenOption.CREATE_NEW)) {
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(
+					statisticsFile));
 			writer.write(sb.toString());
 
 			writer.flush();
@@ -74,11 +73,11 @@ public class OneExecutionStatistics extends StatisticsModule {
 		}
 	}
 
-	private boolean isPmActive(PhysicalMachine pm) {
+	private boolean isPmActive(Server pm) {
 		return !pm.getVirtualMachines().isEmpty();
 	}
 
-	private boolean isPmOverloaded(PhysicalMachine pm) {
+	private boolean isPmOverloaded(Server pm) {
 		List<VirtualMachine> vms = pm.getVirtualMachines();
 
 		double sum;
@@ -95,7 +94,7 @@ public class OneExecutionStatistics extends StatisticsModule {
 	}
 
 	public void generateStatistics(long currentTime) throws Exception {
-		physicalMachines = virtualizationManager.getActivePmList();
+		physicalMachines = virtualizationManager.getActiveServerList();
 
 		measurement = measurementModule.measureSystem(currentTime);
 
@@ -113,7 +112,7 @@ public class OneExecutionStatistics extends StatisticsModule {
 			totalIdleResources.put(type, new Double(0.0));
 		}
 
-		for (PhysicalMachine pm : physicalMachines) {
+		for (Server pm : physicalMachines) {
 			if (isPmActive(pm)) {
 				pmsUsed++;
 			}
@@ -138,6 +137,10 @@ public class OneExecutionStatistics extends StatisticsModule {
 		}
 
 		// write statistics
+		if (statisticsFile == null) {
+			initialize();
+		}
+
 		// predictionTime vms pmsUsed pmsOverloaded slaViolations totalIdleCpu
 		// totalIdleMem
 
@@ -156,8 +159,12 @@ public class OneExecutionStatistics extends StatisticsModule {
 			initialize();
 		}
 
-		try (BufferedWriter writer = Files.newBufferedWriter(statisticsFile,
-				charset, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
+		// try (BufferedWriter writer = Files.newBufferedWriter(statisticsFile,
+		// charset, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(
+					statisticsFile, true));
+
 			writer.write(sb.toString());
 
 			writer.flush();

@@ -6,14 +6,14 @@ import java.util.List;
 import java.util.Map;
 
 import br.usp.ime.cassiop.workloadsim.Environment;
-import br.usp.ime.cassiop.workloadsim.model.PhysicalMachine;
+import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
 public class GoogleCluster implements Environment {
-	private Map<PhysicalMachine, MachineStatus> environmentStatus = null;
+	private Map<Server, MachineStatus> environmentStatus = null;
 
-	public Map<PhysicalMachine, MachineStatus> getEnvironmentStatus() {
+	public Map<Server, MachineStatus> getEnvironmentStatus() {
 		return environmentStatus;
 	}
 
@@ -24,7 +24,7 @@ public class GoogleCluster implements Environment {
 	}
 
 	private void initialize() {
-		environmentStatus = new HashMap<PhysicalMachine, MachineStatus>();
+		environmentStatus = new HashMap<Server, MachineStatus>();
 
 		// NumberOfMachines CPUs Memory
 		// 6732 0.50 0.50
@@ -57,7 +57,7 @@ public class GoogleCluster implements Environment {
 			return;
 		}
 
-		PhysicalMachine pm = new PhysicalMachine();
+		Server pm = new Server();
 		MachineStatus status = new MachineStatus();
 
 		status.setAvailable((int) (machinesAvailable * environmentMultiplier));
@@ -75,7 +75,7 @@ public class GoogleCluster implements Environment {
 	 * (br.usp.ime.cassiop.workloadsim.model.PhysicalMachine)
 	 */
 	@Override
-	public PhysicalMachine getMachineOfType(PhysicalMachine pm)
+	public Server getMachineOfType(Server pm)
 			throws Exception {
 		MachineStatus status = environmentStatus.get(pm);
 		if (status == null) {
@@ -85,7 +85,7 @@ public class GoogleCluster implements Environment {
 
 		status.useOne();
 
-		PhysicalMachine newPm = new PhysicalMachine();
+		Server newPm = new Server();
 		newPm.setCapacity(ResourceType.CPU, pm.getCapacity(ResourceType.CPU));
 		newPm.setCapacity(ResourceType.MEMORY,
 				pm.getCapacity(ResourceType.MEMORY));
@@ -101,10 +101,10 @@ public class GoogleCluster implements Environment {
 	 * br.usp.ime.cassiop.workloadsim.environment.Environment#getMachineTypes()
 	 */
 	@Override
-	public List<PhysicalMachine> getAvailableMachineTypes() {
-		List<PhysicalMachine> availableMachines = new ArrayList<PhysicalMachine>();
+	public List<Server> getAvailableMachineTypes() {
+		List<Server> availableMachines = new ArrayList<Server>();
 
-		for (PhysicalMachine pm : environmentStatus.keySet()) {
+		for (Server pm : environmentStatus.keySet()) {
 			if (environmentStatus.get(pm).getAvailable() > environmentStatus
 					.get(pm).getUsed()) {
 				availableMachines.add(pm);
@@ -138,8 +138,13 @@ public class GoogleCluster implements Environment {
 	}
 
 	@Override
-	public Map<PhysicalMachine, MachineStatus> getPhysicalMachineStatus() {
-		return environmentStatus;
+	public void turnOffMachineOfType(Server server) throws Exception {
+		for (Server sv : environmentStatus.keySet()) {
+			if (server.getType() == sv.getType()) {
+				environmentStatus.get(sv).turnOffOne();
+			}
+		}
 	}
+
 
 }

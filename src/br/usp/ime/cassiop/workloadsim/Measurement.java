@@ -24,7 +24,11 @@ public class Measurement {
 	}
 
 	public double getVmActualDemand(VirtualMachine vm, ResourceType type) {
-		return actualDemand.get(vm.getName()).getDemand(type);
+		VirtualMachine actualVm = actualDemand.get(vm.getName());
+		if (actualVm == null) {
+			System.out.println(vm.toString());
+		}
+		return actualVm.getDemand(type);
 	}
 
 	public Long getTime() {
