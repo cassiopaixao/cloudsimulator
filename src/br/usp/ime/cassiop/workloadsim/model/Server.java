@@ -29,12 +29,17 @@ public class Server extends Machine {
 	private double kneePerformanceLossCpuNrml = 1;
 	private double kneePerformanceLossMemNrml = 1;
 
-	public double getResourceUtilization() {		
+	public double getResourceUtilization() {
 		return resourceUtilization;
 	}
 
 	public double getResidualCapacity() {
 		return residualCapacity;
+	}
+
+	public double getLoadPercentage() {
+		return ((resourceCpu - freeResourceCpu) * (resourceMem - freeResourceMem))
+				/ (resourceCpu * resourceMem);
 	}
 
 	public Server() {
@@ -47,9 +52,10 @@ public class Server extends Machine {
 		return virtualMachines;
 	}
 
-	public void addVirtualMachine(VirtualMachine newVm) throws Exception {
+	public void addVirtualMachine(VirtualMachine newVm)
+			throws UnknownVirtualMachineException, ServerOverloadedException {
 		if (newVm == null) {
-			throw new Exception(
+			throw new UnknownVirtualMachineException(
 					"It is not possible to assign a null VM to a physical machine.");
 		}
 		virtualMachines.add(newVm);
@@ -57,8 +63,13 @@ public class Server extends Machine {
 
 		freeResourceCpu -= newVm.getResource(ResourceType.CPU);
 		freeResourceMem -= newVm.getResource(ResourceType.MEMORY);
-		
+
 		updateResourceUtilization();
+
+		if (freeResourceCpu < 0 || freeResourceMem < 0) {
+			throw new ServerOverloadedException();
+		}
+
 	}
 
 	public void clear() {
@@ -69,7 +80,7 @@ public class Server extends Machine {
 
 		freeResourceCpu = resourceCpu;
 		freeResourceMem = resourceMem;
-		
+
 		updateResourceUtilization();
 	}
 
@@ -83,7 +94,7 @@ public class Server extends Machine {
 
 		freeResourceCpu += vm.getResource(ResourceType.CPU);
 		freeResourceMem += vm.getResource(ResourceType.MEMORY);
-		
+
 		updateResourceUtilization();
 	}
 
@@ -216,6 +227,11 @@ public class Server extends Machine {
 	public void updateVm(VirtualMachine vmInDemand)
 			throws ServerOverloadedException, UnknownVirtualMachineException {
 		for (VirtualMachine vm : virtualMachines) {
+			if (vm == null || vm.getName() == null || vmInDemand == null
+					|| vmInDemand.getName() == null) {
+				System.out.println("tah nulo");
+			}
+
 			if (vm.getName().equals(vmInDemand.getName())) {
 				updateVm(vm, vmInDemand);
 				return;
@@ -229,8 +245,12 @@ public class Server extends Machine {
 		resourceUtilization = Math.sqrt(Math.pow(resourceCpu - freeResourceCpu,
 				2) + Math.pow(resourceMem - freeResourceMem, 2));
 
-		residualCapacity = Math.sqrt(Math.pow(freeResourceCpu, 2)
-				+ Math.pow(freeResourceMem, 2));
+		if (freeResourceCpu < 0 || freeResourceMem < 0) {
+			residualCapacity = 0;
+		} else {
+			residualCapacity = Math.sqrt(Math.pow(freeResourceCpu, 2)
+					+ Math.pow(freeResourceMem, 2));
+		}
 
 	}
 

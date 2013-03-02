@@ -1,5 +1,11 @@
 package br.usp.ime.cassiop.workloadsim;
 
+import java.util.List;
+
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
+import joptsimple.OptionSpec;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,31 +27,114 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 
-		double errorArg = 0.0;
+		List<Double> errorArgs = null;
+
+		boolean shouldLog = false;
 
 		MigrationControlToUse migrationToUse = MigrationControlToUse.NONE;
 
-		try {
-			// error in prediction - mandatory
-			if (args.length == 0) {
-				throw new Exception(
-						"Should specify the error in prediction.\nEx.: -0.10");
-			}
-			errorArg = Double.parseDouble(args[0]);
+		PlacementType placementToUse = null;
 
-			if (errorArg <= -1.0) {
-				throw new Exception("Error couldn't be less than -1.0");
+		EnvironmentToUse environmentToUse = EnvironmentToUse.HOMOGENEOUS;
+
+		try {
+			OptionParser parser = new OptionParser();
+			// error in prediction
+			OptionSpec<Double> predictionErrorArg = parser
+					.accepts("e", "error in prediction").withRequiredArg()
+					.ofType(Double.class).describedAs("error")
+					.defaultsTo(new Double(0.0));
+
+			// migration control to use
+			OptionSpec<String> migrationArg = parser
+					.accepts("m",
+							"migration control to use (khanna, ifchange, ifoverload, none, all)")
+					.withRequiredArg().ofType(String.class).defaultsTo("none");
+
+			// placement strategy to use
+			OptionSpec<String> placementArg = parser
+					.accepts("p",
+							"placement strategy to use (khanna, ffd, bfd, wfd, all)")
+					.withRequiredArg().ofType(String.class).defaultsTo("all");
+
+			// environment
+			parser.accepts("g", "use heterogeneous google environment");
+			// accepts("h", "use homogeneous environment");
+
+			// log
+			parser.accepts("l", "log path");
+
+			// number of threads
+			OptionSpec<Integer> numberOfThreadsArg = parser
+					.accepts("t", "maximum threads").withRequiredArg()
+					.ofType(Integer.class).describedAs("threads").defaultsTo(1);
+
+			OptionSet options = parser.parse(args);
+
+			// error in prediction
+			errorArgs = predictionErrorArg.values(options);
+
+			for (Double errorArg : errorArgs) {
+				if (errorArg.doubleValue() <= -1.0) {
+					throw new Exception(
+							"Error can't be less than or equals -1.0");
+				}
 			}
 
 			// migration control to use - optional
-			if (args.length > 1) {
-				if (args[1].equals("ifchange")) {
+			if (options.has(migrationArg)) {
+				String value = migrationArg.value(options);
+
+				if (value.equals("ifchange")) {
 					migrationToUse = MigrationControlToUse.MIGRATE_IF_CHANGE;
-				} else if (args[1].equals("ifoverload")) {
+				} else if (value.equals("ifoverload")) {
 					migrationToUse = MigrationControlToUse.MIGRATE_IF_CHANGE_AND_SERVER_BECOMES_OVERLOADED;
-				} else if (args[1].equals("khanna")) {
+				} else if (value.equals("khanna")) {
 					migrationToUse = MigrationControlToUse.KHANNA;
+				} else if (value.equals("all")) {
+					migrationToUse = null;
 				}
+			}
+
+			// placement strategy to use - optional
+			if (options.has(placementArg)) {
+				String value = placementArg.value(options);
+
+				if (value.equals("ffd")) {
+					placementToUse = PlacementType.FIRST_FIT;
+				} else if (value.equals("bfd")) {
+					placementToUse = PlacementType.BEST_FIT;
+				} else if (value.equals("wfd")) {
+					placementToUse = PlacementType.WORST_FIT;
+				} else if (value.equals("khanna")) {
+					placementToUse = PlacementType.KHANNA;
+				} else if (value.equals("all")) {
+					placementToUse = null;
+				}
+			}
+
+			// environment to use -- optional
+			if (options.has("g")) {
+				environmentToUse = EnvironmentToUse.GOOGLE;
+			} else {
+				environmentToUse = EnvironmentToUse.HOMOGENEOUS;
+			}
+
+			// log -- optional
+			if (options.has("l")) {
+				shouldLog = true;
+			}
+
+			// max number of threads -- optional
+			if (options.has(numberOfThreadsArg)) {
+				Integer value = numberOfThreadsArg.value(options);
+
+				if (value.intValue() < 1) {
+					throw new Exception(
+							"Couldn't execute with at least 1 thread");
+				}
+
+				ExecutionQueue.getInstance().setMaxExecutions(value.intValue());
 			}
 
 		} catch (Exception ex) {
@@ -53,126 +142,97 @@ public class Main {
 			return;
 		}
 
-		// for (EnvironmentToUse environment : EnvironmentToUse.values()) {
-		for (PlacementType placement : PlacementType.values()) {
-			// for (MigrationControlToUse migrationToUse : MigrationControlToUse
-			// .values()) {
+		for (Double errorArg : errorArgs) {
 
-			// for (int i = 0; i < 9; i++) { // 0.8 to 1.2 fixed
-			// for (int i = 2; i < 7; i += 2) { // 0.9, 1.0, 1.1
-			// for (int i = 2; i < 7; i += 4) { // 0.9, 1.1
-			// for (int i = 2; i < 7; i++) { // 0.9, 0.95 1.0, 1.05 1.1
-			// for (int i = 6; i < 7; i++) { // 1.1 fixed
-			// for (int i = 4; i < 5; i++) { // 1.0 fixed
-			// for (int i = 2; i < 3; i++) { // 0.9 fixed
-			// for (int i = 0; i < 5; i++) { // 20 times randomized
+			for (MigrationControlToUse migration : MigrationControlToUse
+					.values()) {
 
-			try {
-
-				if (migrationToUse == MigrationControlToUse.KHANNA) {
-					if (placement != PlacementType.KHANNA) {
-						continue;
-					}
-				} else {
-					if (placement == PlacementType.KHANNA) {
+				if (migrationToUse != null) {
+					if (migrationToUse != migration) {
 						continue;
 					}
 				}
+				if (migration == MigrationControlToUse.NONE) {
+					continue;
+				}
 
-				ExecutionBuilder executionBuilder = new ExecutionBuilder();
+				for (PlacementType placement : PlacementType.values()) {
 
-				// executionBuilder.setEnvironment(environment);
-				executionBuilder.setEnvironment(EnvironmentToUse.GOOGLE);
+					try {
+						if (placementToUse != null
+								&& placement != placementToUse) {
+							continue;
+						}
 
-				executionBuilder
-						.setForecastingModule(ForecasterToUse.WORKLOAD_ERROR_INJECTOR);
+						if (migration == MigrationControlToUse.KHANNA) {
+							if (placement != PlacementType.KHANNA) {
+								continue;
+							}
+						} else {
+							if (placement == PlacementType.KHANNA) {
+								continue;
+							}
+						}
 
-				executionBuilder.setPlacementModule(placement);
+						ExecutionBuilder executionBuilder = new ExecutionBuilder();
 
-				executionBuilder
-						.setStatisticsModule(StatisticsType.MIGRATION_STATISTICS);
+						executionBuilder.setShouldLog(shouldLog);
 
-				executionBuilder.setWorkload(WorkloadToUse.GOOGLE_TRACE_FILE_2);
+						executionBuilder.setEnvironment(environmentToUse);
 
-				executionBuilder
-						.setMeasurementModule(MeasurementToUse.WORKLOAD);
+						executionBuilder
+								.setForecastingModule(ForecasterToUse.WORKLOAD_ERROR_INJECTOR);
 
-				executionBuilder.setMigrationController(migrationToUse);
+						executionBuilder.setPlacementModule(placement);
 
-				ExecutionConfiguration execution = executionBuilder.build();
+						executionBuilder
+								.setStatisticsModule(StatisticsType.MIGRATION_STATISTICS);
 
-				execution.setParameter(
-						Constants.PARAMETER_ENVIRONMENT_MULTIPLIER, new Double(
-								1));
+						executionBuilder
+								.setWorkload(WorkloadToUse.GOOGLE_TRACE_FILE_2);
 
-				double meanError, variation;
+						executionBuilder
+								.setMeasurementModule(MeasurementToUse.WORKLOAD);
 
-				// command line arguments
-				meanError = errorArg;
-				variation = 0;
+						executionBuilder.setMigrationController(migration);
 
-				// 0.8 a 1.2 fixo
-				// meanError = -0.2 + i * 0.05;
-				// variation = 0;
+						executionBuilder.setParameter(
+								Constants.PARAMETER_ENVIRONMENT_MULTIPLIER,
+								new Double(1));
 
-				// 0.97 a 1.03 fixo
-				// meanError = -0.03 + i * 0.01;
-				// variation = 0;
+						double meanError, variation;
 
-				// 0.992 a 0.998 fixo
-				// meanError = -0.008 + i * 0.002;
-				// variation = 0;
+						// command line arguments
+						meanError = errorArg.doubleValue();
+						variation = 0;
 
-				// // 0.999 a 1.00 fixo
-				// meanError = -0.001 + i * 0.00025;
-				// variation = 0;
+						executionBuilder.setParameter(
+								Constants.PARAMETER_FORECASTING_MEAN_ERROR,
+								new Double(meanError));
+						executionBuilder.setParameter(
+								Constants.PARAMETER_FORECASTING_VARIATION,
+								new Double(variation));
 
-				// 0.8 a 1.2 aleatorio
-				// meanError = 0;
-				// variation = 0.2;
+						executionBuilder
+								.setParameter(
+										Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER,
+										String.format("%.2f", errorArg));
 
-				configureError(execution, meanError, variation);
+						// execution.setParameter(Constants.PARAMETER_FORECASTING_MEASUREMENT_WINDOW,
+						// new Integer(2));
 
-				execution.setParameter(
-						Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER,
-						String.format("(%.2f)", errorArg));
+						// new Thread(execution).start();
 
-				execution.addToFileName(String.format("(%.2f)", errorArg));
+						ExecutionQueue.getInstance().addExecution(
+								executionBuilder.build());
 
-				// execution.setParameter(Constants.PARAMETER_FORECASTING_MEASUREMENT_WINDOW,
-				// new Integer(2));
-
-				// execution.setParameter(
-				// Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER,
-				// String.format("%d", -3 + i));
-
-				// execution
-				// .setParameter(
-				// Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER,
-				// String.format("%.2f", -0.8 + i * 0.2));
-
-				// execution
-				// .setParameter(
-				// Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER,
-				// String.format("%.3f", -0.1 + i * 0.025));
-
-				new Thread(execution).start();
-
-			} catch (Exception ex) {
-				ex.printStackTrace();
+					} catch (Exception ex) {
+						ex.printStackTrace();
+					}
+				}
 			}
-			// }
-			// }
 		}
 
 	}
 
-	private static void configureError(ExecutionConfiguration execution,
-			double meanError, double variation) {
-		execution.setParameter(Constants.PARAMETER_FORECASTING_MEAN_ERROR,
-				new Double(meanError));
-		execution.setParameter(Constants.PARAMETER_FORECASTING_VARIATION,
-				new Double(variation));
-
-	}
 }

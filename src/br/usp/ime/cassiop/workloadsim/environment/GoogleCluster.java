@@ -140,8 +140,9 @@ public class GoogleCluster implements Environment {
 	@Override
 	public void turnOffMachineOfType(Server server) throws Exception {
 		for (Server sv : environmentStatus.keySet()) {
-			if (server.getType() == sv.getType()) {
+			if (server.getType().equals(sv.getType())) {
 				environmentStatus.get(sv).turnOffOne();
+				break;
 			}
 		}
 	}

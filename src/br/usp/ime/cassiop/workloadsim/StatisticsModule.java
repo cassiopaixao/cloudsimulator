@@ -13,11 +13,11 @@ public abstract class StatisticsModule implements Parametrizable {
 	protected MeasurementModule measurementModule = null;
 	protected ForecastingModule forecastingModule = null;
 
-//	protected Path statisticsFile = null;
+	// protected Path statisticsFile = null;
 	protected File statisticsFile = null;
 	protected static final Charset charset = Charset.forName("UTF-8");
 
-	protected Map<String, Integer> statistics = null;
+	protected Map<String, Number> statistics = null;
 
 	public File getStatisticsFile() {
 		return statisticsFile;
@@ -55,11 +55,24 @@ public abstract class StatisticsModule implements Parametrizable {
 	public abstract void generateStatistics(long currentTime) throws Exception;
 
 	public void initialize() throws Exception {
-		statistics = new HashMap<String, Integer>();
+		statistics = new HashMap<String, Number>();
 	}
 
 	public void setStatisticValue(String name, int value) {
 		statistics.put(name, new Integer(value));
+	}
+
+	public void setStatisticValue(String name, double value) {
+		statistics.put(name, new Double(value));
+	}
+
+	public void addToStatisticValue(String name, double value) {
+		if (statistics.containsKey(name)) {
+			statistics.put(name, new Double(statistics.get(name).doubleValue()
+					+ value));
+		} else {
+			setStatisticValue(name, value);
+		}
 	}
 
 	public void addToStatisticValue(String name, int value) {
@@ -73,14 +86,18 @@ public abstract class StatisticsModule implements Parametrizable {
 
 	public void clearStatistics() {
 		for (String key : statistics.keySet()) {
-			statistics.put(key, new Integer(0));
+			if (statistics.get(key) instanceof Double) {
+				statistics.put(key, new Double(0));
+			} else {
+				statistics.put(key, new Integer(0));
+			}
 		}
 	}
 
 	@Override
 	public void setParameters(Map<String, Object> parameters) throws Exception {
 		Object o = null;
-
+		
 		o = parameters.get(Constants.PARAMETER_VIRTUALIZATION_MANAGER);
 		if (o instanceof VirtualizationManager) {
 			setVirtualizationManager((VirtualizationManager) o);

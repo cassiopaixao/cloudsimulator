@@ -73,6 +73,9 @@ public class VirtualizationManager implements Parametrizable {
 					&& !vm.getLastServer().getName().equals(server.getName())) {
 				statisticsModule.addToStatisticValue(
 						Constants.STATISTIC_MIGRATIONS, 1);
+				statisticsModule.addToStatisticValue(
+						Constants.STATISTIC_MIGRATIONS_COST,
+						vm.getResourceUtilization());
 			}
 		} else {
 			throw new Exception("Unknown destination server.");
@@ -204,19 +207,29 @@ public class VirtualizationManager implements Parametrizable {
 			keepRunning.put(vm.getName(), null);
 		}
 
-		List<String> activeVms = new ArrayList<String>(vmMap.keySet());
+		// List<String> activeVms = new ArrayList<String>(vmMap.keySet());
+		// VirtualMachine vm = null;
+		// // for each vm already allocated
+		// for (String vmName : activeVms) {
+		// // if it isn't in the new demands' list
+		// if (!keepRunning.containsKey(vmName)) {
+		// vm = vmMap.get(vmName);
+		// // and it's endTime was reached
+		// if (vm.getEndTime() <= currentTime) {
+		// // should deallocate the resources.
+		// deallocate(vm);
+		// }
+		// }
+		// }
 
-		VirtualMachine vm = null;
-
-		// for each vm already allocated
-		for (String vmName : activeVms) {
-			// if it isn't in the new demands' list
-			if (!keepRunning.containsKey(vmName)) {
-				vm = vmMap.get(vmName);
-				// and it's endTime was reached
-				if (vm.getEndTime() <= currentTime) {
-					// should deallocate the resources.
-					deallocate(vm);
+		for (Server server : serverMap.values()) {
+			List<VirtualMachine> vms = new ArrayList<VirtualMachine>(
+					server.getVirtualMachines());
+			for (VirtualMachine vm : vms) {
+				if (!keepRunning.containsKey(vm.getName())) {
+					if (vm.getEndTime() <= currentTime) {
+						deallocate(vm);
+					}
 				}
 			}
 		}

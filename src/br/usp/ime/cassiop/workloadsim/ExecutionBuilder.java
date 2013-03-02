@@ -1,6 +1,7 @@
 package br.usp.ime.cassiop.workloadsim;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +44,7 @@ public class ExecutionBuilder {
 	}
 
 	public enum EnvironmentToUse {
-		IDEAL, GOOGLE
+		HOMOGENEOUS, GOOGLE
 	}
 
 	public enum ForecasterToUse {
@@ -65,6 +66,7 @@ public class ExecutionBuilder {
 	private ForecasterToUse forecaster = null;
 	private MeasurementToUse measurement = null;
 	private MigrationControlToUse migration = null;
+	private boolean shouldLog = false;
 
 	public void setMigrationController(MigrationControlToUse migration) {
 		executionConfiguration.setParameter(
@@ -85,11 +87,20 @@ public class ExecutionBuilder {
 				.setVirtualizationManager(new VirtualizationManager());
 	}
 
-	public ExecutionConfiguration build() {
+	public ExecutionConfiguration build() throws IOException {
 		executionConfiguration.setParameter(
 				Constants.PARAMETER_STATISTICS_FILE, buildStatisticsFilename());
 
+		if (shouldLog) {
+			executionConfiguration.setParameter(Constants.PARAMETER_LOG_PATH,
+					buildLogPath());
+		}
+
 		return executionConfiguration;
+	}
+
+	public void setParameter(String parameter, Object value) {
+		executionConfiguration.setParameter(parameter, value);
 	}
 
 	public void setEnvironment(EnvironmentToUse environment) {
@@ -139,13 +150,17 @@ public class ExecutionBuilder {
 		this.forecaster = forecaster;
 	}
 
+	public void setShouldLog(boolean shouldLog) {
+		this.shouldLog = shouldLog;
+	}
+
 	private File buildStatisticsFilename() {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("res/statistics_");
 		switch (environment) {
-		case IDEAL:
-			sb.append("ideal_");
+		case HOMOGENEOUS:
+			sb.append("homogeneous_");
 			break;
 		case GOOGLE:
 			sb.append("googlecluster_");
@@ -188,7 +203,7 @@ public class ExecutionBuilder {
 			sb.append("wfd_");
 			break;
 		case KHANNA:
-			sb.append("kanna_");
+			sb.append("khanna_");
 		}
 
 		switch (statistics) {
@@ -220,9 +235,95 @@ public class ExecutionBuilder {
 		case NONE:
 		}
 
+		if (forecaster == ForecasterToUse.WORKLOAD_ERROR_INJECTOR) {
+			sb.append(String.format(
+					"(%.2f)",
+					(Double) executionConfiguration.getParameters().get(
+							Constants.PARAMETER_FORECASTING_MEAN_ERROR)));
+		}
+
 		sb.append(".csv");
 
 		return new File(sb.toString());
+	}
+
+	private File buildLogPath() throws IOException {
+		File path = null;
+		String canonicalPath = "log/";
+		boolean canContinue = false;
+
+		path = new File(canonicalPath);
+
+		if (path.isDirectory() && path.canWrite()) {
+			canContinue = true;
+		} else {
+			canContinue = path.mkdir();
+		}
+		if (!canContinue) {
+			throw new IOException("Can't write to " + path.getCanonicalPath()
+					+ " directory. Check folder's permissions.");
+		}
+
+		String migControl = null;
+		switch (migration) {
+		case MIGRATE_IF_CHANGE:
+			migControl = "ifchange";
+			break;
+		case MIGRATE_IF_CHANGE_AND_SERVER_BECOMES_OVERLOADED:
+			migControl = "ifoverload";
+			break;
+		case KHANNA:
+			migControl = "khanna";
+			break;
+		case NONE:
+			migControl = "nomigcontrol";
+			break;
+		}
+		canonicalPath = String.format(
+				"%s%s%.0f/",
+				canonicalPath,
+				migControl,
+				(((Double) executionConfiguration.getParameters().get(
+						Constants.PARAMETER_FORECASTING_MEAN_ERROR)) * 100));
+
+		path = new File(canonicalPath);
+
+		if (path.isDirectory() && path.canWrite()) {
+			canContinue = true;
+		} else {
+			canContinue = path.mkdir();
+		}
+		if (!canContinue) {
+			throw new IOException("Can't write to " + path.getCanonicalPath()
+					+ " directory. Check folder's permissions.");
+		}
+
+		switch (placement) {
+		case BEST_FIT:
+			canonicalPath = canonicalPath.concat("bfd/");
+			break;
+		case FIRST_FIT:
+			canonicalPath = canonicalPath.concat("ffd/");
+			break;
+		case WORST_FIT:
+			canonicalPath = canonicalPath.concat("wfd/");
+			break;
+		case KHANNA:
+		}
+
+		path = new File(canonicalPath);
+
+		if (path.isDirectory() && path.canWrite()) {
+			canContinue = true;
+		} else {
+			canContinue = path.mkdir();
+		}
+		if (!canContinue) {
+			throw new IOException("Can't write to " + path.getCanonicalPath()
+					+ " directory. Check folder's permissions.");
+		}
+
+		return path;
 	}
 
 	private MeasurementModule getMeasurementModule(MeasurementToUse measurement) {
@@ -277,7 +378,7 @@ public class ExecutionBuilder {
 
 	private Environment getEnvironment(EnvironmentToUse environment) {
 		switch (environment) {
-		case IDEAL:
+		case HOMOGENEOUS:
 			return new IdealCluster();
 		case GOOGLE:
 			return new GoogleCluster();

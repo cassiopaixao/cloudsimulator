@@ -50,6 +50,21 @@ public class Constants {
 
 	public static final String STATISTIC_MIGRATIONS = "migrations";
 
+	public static final String STATISTIC_MIGRATIONS_COST = "migrations_cost";
+
+	public static final String STATISTIC_RESIDUAL_CAPACITY = "residual_capacity";
+
 	public static final String PARAMETER_RESOURCE_LOW_UTILIZATION = "resource_low_utilization";
+
+	public static final String PARAMETER_LOG_PATH = "LogPath";
+
+	public static final String STATISTIC_SERVERS_LOAD_AVERAGE = "servers_load";
+
+	public static final String STATISTIC_SERVERS_LOAD_STD_DEV = "servers_load_std_dev";
+
+	public static final String STATISTIC_SERVERS_CPU_LOAD_AVERAGE = "servers_cpu_load";
+	public static final String STATISTIC_SERVERS_CPU_LOAD_STD_DEV = "servers_cpu_load_std_dev";
+	public static final String STATISTIC_SERVERS_MEM_LOAD_AVERAGE = "servers_mem_load";
+	public static final String STATISTIC_SERVERS_MEM_LOAD_STD_DEV = "servers_mem_load_std_dev";
 
 }

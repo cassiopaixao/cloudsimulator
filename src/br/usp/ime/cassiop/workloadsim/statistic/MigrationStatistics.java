@@ -7,14 +7,19 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.Measurement;
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
+import br.usp.ime.cassiop.workloadsim.environment.MachineStatus;
+import br.usp.ime.cassiop.workloadsim.exceptions.ServerOverloadedException;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
@@ -35,6 +40,8 @@ public class MigrationStatistics extends StatisticsModule {
 	private String executionIdentifier = null;
 
 	private List<String> statisticsFields = null;
+
+	private List<Server> machineTypes = null;
 
 	@Override
 	public void setParameters(Map<String, Object> parameters) throws Exception {
@@ -69,14 +76,30 @@ public class MigrationStatistics extends StatisticsModule {
 		statisticsFields.add(Constants.STATISTIC_USED_SERVERS);
 		statisticsFields.add(Constants.STATISTIC_SERVERS_TURNED_OFF);
 		statisticsFields.add(Constants.STATISTIC_OVERLOADED_SERVERS);
+		statisticsFields.add(Constants.STATISTIC_SERVERS_LOAD_AVERAGE);
+		statisticsFields.add(Constants.STATISTIC_SERVERS_LOAD_STD_DEV);
+		statisticsFields.add(Constants.STATISTIC_SERVERS_CPU_LOAD_AVERAGE);
+		statisticsFields.add(Constants.STATISTIC_SERVERS_CPU_LOAD_STD_DEV);
+		statisticsFields.add(Constants.STATISTIC_SERVERS_MEM_LOAD_AVERAGE);
+		statisticsFields.add(Constants.STATISTIC_SERVERS_MEM_LOAD_STD_DEV);
 		statisticsFields.add(Constants.STATISTIC_VIRTUAL_MACHINES);
 		statisticsFields.add(Constants.STATISTIC_NEW_VIRTUAL_MACHINES);
 		statisticsFields
 				.add(Constants.STATISTIC_VIRTUAL_MACHINES_TO_REALLOCATE);
 		statisticsFields.add(Constants.STATISTIC_MIGRATIONS);
+		statisticsFields.add(Constants.STATISTIC_MIGRATIONS_COST);
+		statisticsFields.add(Constants.STATISTIC_RESIDUAL_CAPACITY);
 		statisticsFields.add(Constants.STATISTIC_SLA_VIOLATIONS);
 		statisticsFields
 				.add(Constants.STATISTIC_VIRTUAL_MACHINES_NOT_ALLOCATED);
+
+		Map<Server, MachineStatus> environmentStatus = virtualizationManager
+				.getEnvironment().getEnvironmentStatus();
+
+		machineTypes = new ArrayList<Server>(environmentStatus.keySet());
+
+		Collections.sort(machineTypes);
+		Collections.reverse(machineTypes);
 
 		for (String field : statisticsFields) {
 			setStatisticValue(field, 0);
@@ -86,6 +109,14 @@ public class MigrationStatistics extends StatisticsModule {
 		sb.append(executionIdentifier).append(DELIMITER);
 		for (String field : statisticsFields) {
 			sb.append(field).append(DELIMITER);
+		}
+
+		for (Server pm : machineTypes) {
+			sb.append(
+					String.format("%d(%.2f,%.2f)", environmentStatus.get(pm)
+							.getAvailable(), pm.getCapacity(ResourceType.CPU),
+							pm.getCapacity(ResourceType.MEMORY))).append(
+					DELIMITER);
 		}
 
 		// try (BufferedWriter writer = Files.newBufferedWriter(statisticsFile,
@@ -117,17 +148,76 @@ public class MigrationStatistics extends StatisticsModule {
 		statistics
 				.put(Constants.STATISTIC_SERVERS, new Integer(servers.size()));
 
+		Map<Server, MachineStatus> environmentStatus = virtualizationManager
+				.getEnvironment().getEnvironmentStatus();
+
 		int serversUsed = servers.size();
 		int serversOverloaded = 0;
 		int slaViolations = 0;
+		double residualCapacity = 0;
+
+		double servers_load[] = new double[serversUsed];
+		double servers_cpu_load[] = new double[serversUsed];
+		double servers_mem_load[] = new double[serversUsed];
+		int servers_load_i = 0;
+
 		for (Server server : servers) {
 			if (server.getVirtualMachines().isEmpty()) {
 				serversUsed--;
-			} else if (isServerOverloaded(server)) {
-				serversOverloaded++;
-				slaViolations += server.getVirtualMachines().size();
+			} else {
+				// update the vms' needs
+				for (VirtualMachine vm : server.getVirtualMachines()) {
+					try {
+						server.updateVm(measurement.getActualDemand().get(
+								vm.getName()));
+					} catch (ServerOverloadedException ex) {
+					}
+				}
+
+				residualCapacity += server.getResidualCapacity();
+
+				if (isServerOverloaded(server)) {
+					serversOverloaded++;
+					slaViolations += server.getVirtualMachines().size();
+				}
 			}
+			servers_load[servers_load_i] = server.getLoadPercentage();
+			servers_cpu_load[servers_load_i] = (server
+					.getCapacity(ResourceType.CPU) - server
+					.getFreeResource(ResourceType.CPU))
+					/ server.getCapacity(ResourceType.CPU);
+			servers_mem_load[servers_load_i] = (server
+					.getCapacity(ResourceType.MEMORY) - server
+					.getFreeResource(ResourceType.MEMORY))
+					/ server.getCapacity(ResourceType.MEMORY);
+			servers_load_i++;
 		}
+
+		StandardDeviation stdDeviation = new StandardDeviation();
+		Mean mean = new Mean();
+
+		statistics.put(Constants.STATISTIC_SERVERS_LOAD_AVERAGE, new Double(
+				mean.evaluate(servers_load, 0, servers_load_i)));
+		statistics.put(Constants.STATISTIC_SERVERS_LOAD_STD_DEV, new Double(
+				stdDeviation.evaluate(servers_load, 0, servers_load_i)));
+		mean.clear();
+		stdDeviation.clear();
+		statistics.put(Constants.STATISTIC_SERVERS_CPU_LOAD_AVERAGE,
+				new Double(mean.evaluate(servers_cpu_load, 0, servers_load_i)));
+		statistics.put(
+				Constants.STATISTIC_SERVERS_CPU_LOAD_STD_DEV,
+				new Double(stdDeviation.evaluate(servers_cpu_load, 0,
+						servers_load_i)));
+		mean.clear();
+		stdDeviation.clear();
+		statistics.put(Constants.STATISTIC_SERVERS_MEM_LOAD_AVERAGE,
+				new Double(mean.evaluate(servers_mem_load, 0, servers_load_i)));
+		statistics.put(
+				Constants.STATISTIC_SERVERS_MEM_LOAD_STD_DEV,
+				new Double(stdDeviation.evaluate(servers_mem_load, 0,
+						servers_load_i)));
+		mean.clear();
+		stdDeviation.clear();
 
 		statistics.put(Constants.STATISTIC_USED_SERVERS, new Integer(
 				serversUsed));
@@ -135,6 +225,8 @@ public class MigrationStatistics extends StatisticsModule {
 				serversOverloaded));
 		statistics.put(Constants.STATISTIC_SLA_VIOLATIONS, new Integer(
 				slaViolations));
+		statistics.put(Constants.STATISTIC_RESIDUAL_CAPACITY, new Double(
+				residualCapacity));
 
 		// write statistics
 		if (statisticsFile == null) {
@@ -146,6 +238,11 @@ public class MigrationStatistics extends StatisticsModule {
 		sb.append(currentTime).append(DELIMITER);
 		for (String field : statisticsFields) {
 			sb.append(statistics.get(field)).append(DELIMITER);
+		}
+
+		for (Server serverType : machineTypes) {
+			sb.append(environmentStatus.get(serverType).getUsed()).append(
+					DELIMITER);
 		}
 
 		clearStatistics();

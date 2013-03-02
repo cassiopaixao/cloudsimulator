@@ -1,5 +1,6 @@
 package br.usp.ime.cassiop.workloadsim.placement;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -8,19 +9,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.PhysicalMachineTypeChooser;
-import br.usp.ime.cassiop.workloadsim.PlacementModule;
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
+import br.usp.ime.cassiop.workloadsim.exceptions.ServerOverloadedException;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
-public class BestFitDecreasing implements PlacementModule {
+public class BestFitDecreasing implements PlacementWithPowerOffStrategy {
 
 	private VirtualizationManager virtualizationManager = null;
 
 	private StatisticsModule statisticsModule = null;
+
+	private List<Server> servers = null;
+
+	private int vms_not_allocated = 0;
+	private int servers_turned_off = 0;
 
 	public void setStatisticsModule(StatisticsModule statisticsModule) {
 		this.statisticsModule = statisticsModule;
@@ -59,48 +65,27 @@ public class BestFitDecreasing implements PlacementModule {
 		Collections.sort(demand);
 		Collections.reverse(demand);
 
-		Server bestFitServer = null;
-		double bestFitLeavingResource = Double.MAX_VALUE;
-		int vms_not_allocated = 0;
+		vms_not_allocated = 0;
+
+		servers = new ArrayList<Server>(
+				virtualizationManager.getActiveServerList());
 
 		for (VirtualMachine vm : demand) {
-			bestFitServer = null;
-			bestFitLeavingResource = Double.MAX_VALUE;
-
-			for (Server pm : virtualizationManager.getActiveServerList()) {
-				if (pm.canHost(vm)) {
-					// TODO can optimize this? the leaving resource is
-					// calculated for every pm and every vm
-					// maybe a "freeResourceFactor" (cpu * mem OR cpu + mem).
-					// sum is better, 'cause cpu or mem could be zero.
-
-					// stores the best-fit allocation
-					if (leavingResource(pm, vm) < bestFitLeavingResource) {
-						bestFitServer = pm;
-						bestFitLeavingResource = leavingResource(pm, vm);
-					}
-
-				}
-			}
-
-			if (bestFitServer != null) {
-				virtualizationManager.setVmToServer(vm, bestFitServer);
-			} else {
-				Server inactivePm = virtualizationManager
-						.getNextInactiveServer(vm, new BestFitTypeChooser());
-				if (inactivePm != null) {
-					virtualizationManager.setVmToServer(vm, inactivePm);
-				} else {
-					logger.info(
-							"No inactive physical machine provided. Could not consolidate VM {}.",
-							vm.toString());
-					vms_not_allocated++;
-				}
+			try {
+				allocate(vm, servers);
+			} catch (ServerOverloadedException ex) {
 			}
 		}
+
+		servers_turned_off = PowerOffStrategy.powerOff(servers, this,
+				statisticsModule, virtualizationManager);
+
 		statisticsModule.addToStatisticValue(
 				Constants.STATISTIC_VIRTUAL_MACHINES_NOT_ALLOCATED,
 				vms_not_allocated);
+
+		statisticsModule.addToStatisticValue(
+				Constants.STATISTIC_SERVERS_TURNED_OFF, servers_turned_off);
 
 	}
 
@@ -197,5 +182,48 @@ public class BestFitDecreasing implements PlacementModule {
 			throw new Exception(String.format("Invalid parameter: %s",
 					Constants.PARAMETER_STATISTICS_MODULE));
 		}
+	}
+
+	@Override
+	public void allocate(VirtualMachine vm, List<Server> servers)
+			throws Exception {
+		Server bestFitServer = null;
+		double bestFitLeavingResource = Double.MAX_VALUE;
+
+		for (Server pm : virtualizationManager.getActiveServerList()) {
+			if (pm.canHost(vm)) {
+				// TODO can optimize this? the leaving resource is
+				// calculated for every pm and every vm
+				// maybe a "freeResourceFactor" (cpu * mem OR cpu + mem).
+				// sum is better, 'cause cpu or mem could be zero.
+
+				// stores the best-fit allocation
+				if (leavingResource(pm, vm) < bestFitLeavingResource) {
+					bestFitServer = pm;
+					bestFitLeavingResource = leavingResource(pm, vm);
+				}
+
+			}
+		}
+
+		if (bestFitServer != null) {
+			virtualizationManager.setVmToServer(vm, bestFitServer);
+		} else {
+			Server inactivePm = virtualizationManager.getNextInactiveServer(vm,
+					new BestFitTypeChooser());
+			if (inactivePm != null) {
+				try {
+					virtualizationManager.setVmToServer(vm, inactivePm);
+				} catch (ServerOverloadedException ex) {
+				}
+				servers.add(inactivePm);
+			} else {
+				logger.info(
+						"No inactive physical machine provided. Could not consolidate VM {}.",
+						vm.toString());
+				vms_not_allocated++;
+			}
+		}
+
 	}
 }

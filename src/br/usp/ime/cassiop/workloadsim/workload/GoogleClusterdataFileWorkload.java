@@ -13,17 +13,21 @@ import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 
 public class GoogleClusterdataFileWorkload extends Workload {
 
-//	private static final Charset charset = Charset.forName("UTF-8");
+	// private static final Charset charset = Charset.forName("UTF-8");
 
-	private String filenamePattern = "/var/tmp/cassiop/res/workloads/%d-%d.csv";
+	// private String filenamePattern =
+	// "/var/tmp/cassiop/res/workloads/%d-%d.csv";
+	private String filenamePattern = "res/workloads/%d-%d.csv";
 
 	public static GoogleClusterdataFileWorkload build() throws Exception {
 		long initialTime = 600;
 		long timeInterval = 300;
-		// long lastTime = 4200; // 4200 1h de workload
-		// long lastTime = 25800; // 25800 7h de workload
-		long lastTime = 87000; // 87000 24h de workload
+//		long lastTime = 1800; // 1200 20min de workload
+//		 long lastTime = 4200; // 4200 1h de workload
+//		 long lastTime = 25800; // 25800 7h de workload
+		 long lastTime = 87000; // 87000 24h de workload
 
+		
 		GoogleClusterdataFileWorkload gw = new GoogleClusterdataFileWorkload(
 				initialTime, timeInterval, lastTime);
 

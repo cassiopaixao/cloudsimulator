@@ -3,7 +3,6 @@ package br.usp.ime.cassiop.workloadsim.placement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -11,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.PhysicalMachineTypeChooser;
-import br.usp.ime.cassiop.workloadsim.PlacementModule;
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
 import br.usp.ime.cassiop.workloadsim.exceptions.ServerOverloadedException;
@@ -21,7 +19,7 @@ import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 import br.usp.ime.cassiop.workloadsim.util.MathUtils;
 
-public class KhannaPlacement implements PlacementModule {
+public class KhannaPlacement implements PlacementWithPowerOffStrategy {
 
 	private VirtualizationManager virtualizationManager = null;
 
@@ -75,46 +73,25 @@ public class KhannaPlacement implements PlacementModule {
 				virtualizationManager.getActiveServerList());
 
 		for (VirtualMachine vm : demand) {
-			if (vm.getCurrentServer() == null) {
-				allocate(vm, servers);
-			} else {
-				try {
-					vm.getCurrentServer().updateVm(vm);
-					if (vm.getCurrentServer().isAlmostOverloaded()) {
+			try {
+				if (vm.getCurrentServer() == null) {
+					allocate(vm, servers);
+				} else {
+					try {
+						vm.getCurrentServer().updateVm(vm);
+						if (vm.getCurrentServer().isAlmostOverloaded()) {
+							migrate(vm.getCurrentServer(), servers);
+						}
+					} catch (ServerOverloadedException ex) {
 						migrate(vm.getCurrentServer(), servers);
 					}
-				} catch (ServerOverloadedException ex) {
-					migrate(vm.getCurrentServer(), servers);
 				}
+			} catch (ServerOverloadedException ex) {
 			}
 		}
 
-		servers_turned_off = 0;
-
-		for (Server server : servers) {
-			if (server.getResourceUtilization() <= lowUtilization) {
-				List<VirtualMachine> shouldMigrate = new LinkedList<VirtualMachine>();
-				List<VirtualMachine> vmsOnServer = new ArrayList<VirtualMachine>(
-						server.getVirtualMachines());
-				
-				for (VirtualMachine vm : vmsOnServer) {
-					virtualizationManager.deallocate(vm);
-					shouldMigrate.add(vm);
-				}
-
-				for (VirtualMachine vm : shouldMigrate) {
-					allocate(vm, servers);
-				}
-
-			}
-		}
-
-		for (Server server : servers) {
-			if (server.getVirtualMachines().isEmpty()) {
-				virtualizationManager.turnOffServer(server);
-				servers_turned_off++;
-			}
-		}
+		servers_turned_off = PowerOffStrategy.powerOff(servers, lowUtilization,
+				this, statisticsModule, virtualizationManager);
 
 		statisticsModule.addToStatisticValue(
 				Constants.STATISTIC_VIRTUAL_MACHINES_NOT_ALLOCATED,
@@ -122,7 +99,6 @@ public class KhannaPlacement implements PlacementModule {
 
 		statisticsModule.addToStatisticValue(
 				Constants.STATISTIC_SERVERS_TURNED_OFF, servers_turned_off);
-
 	}
 
 	private void migrate(Server overloadedServer, List<Server> servers)
@@ -147,7 +123,7 @@ public class KhannaPlacement implements PlacementModule {
 		}
 	}
 
-	private void allocate(VirtualMachine vm, List<Server> servers)
+	public void allocate(VirtualMachine vm, List<Server> servers)
 			throws Exception {
 		// sort servers by residual capacity
 		Collections.sort(servers,
@@ -168,7 +144,10 @@ public class KhannaPlacement implements PlacementModule {
 			Server inactivePm = virtualizationManager.getNextInactiveServer(vm,
 					new KhannaTypeChooser());
 			if (inactivePm != null) {
-				virtualizationManager.setVmToServer(vm, inactivePm);
+				try {
+					virtualizationManager.setVmToServer(vm, inactivePm);
+				} catch (ServerOverloadedException ex) {
+				}
 				servers.add(inactivePm);
 			} else {
 				logger.info(

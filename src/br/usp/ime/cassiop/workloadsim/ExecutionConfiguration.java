@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.migrationcontrol.NoMigrationControl;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
+import br.usp.ime.cassiop.workloadsim.statistic.AllocationLog;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
 public class ExecutionConfiguration extends Thread {
@@ -25,6 +26,7 @@ public class ExecutionConfiguration extends Thread {
 	private StatisticsModule statisticsModule = null;
 	private Environment environment = null;
 	private MigrationController migrationController = null;
+	private AllocationLog allocationLog = null;
 
 	private Map<String, Object> parameters = null;
 
@@ -104,6 +106,10 @@ public class ExecutionConfiguration extends Thread {
 		environment.setParameters(parameters);
 		migrationController.setParameters(parameters);
 
+		if (allocationLog != null) {
+			allocationLog.setParameters(parameters);
+		}
+
 		Object workload = parameters.get(Constants.PARAMETER_WORKLOAD);
 
 		if (workload instanceof Workload) {
@@ -121,12 +127,18 @@ public class ExecutionConfiguration extends Thread {
 		long lastTime = workload.getLastTime();
 
 		statisticsModule.initialize();
-
+		if (allocationLog != null) {
+			allocationLog.initialize();
+		}
 		// new consolidation status
 		virtualizationManager.clear();
 		try {
 			while (currentTime <= lastTime) {
 
+				if (currentTime == 15600 || currentTime == 9000) {
+					System.out.println("error?");
+				}
+				
 				demand = forecastingModule.getPredictions(currentTime);
 
 				virtualizationManager
@@ -136,13 +148,23 @@ public class ExecutionConfiguration extends Thread {
 
 				placementModule.consolidateAll(demand);
 
+				if (allocationLog != null) {
+					allocationLog.generateStatistics(currentTime);
+				}
+
 				statisticsModule.generateStatistics(currentTime);
 
 				// some time after
 				currentTime += timeInterval;
 			}
+			
+			ExecutionQueue.getInstance().endRun();
+			
 		} catch (Exception ex) {
+			ExecutionQueue.getInstance().endRun();
+			
 			logger.error("Exception thrown at time {}.", currentTime);
+			
 			throw ex;
 		}
 	}
@@ -235,6 +257,8 @@ public class ExecutionConfiguration extends Thread {
 			setMigrationController((MigrationController) value);
 		} else if (name.equals(Constants.PARAMETER_MEASUREMENT_MODULE)) {
 			setMeasurementModule((MeasurementModule) value);
+		} else if (name.equals(Constants.PARAMETER_LOG_PATH)) {
+			allocationLog = new AllocationLog();
 		}
 	}
 
