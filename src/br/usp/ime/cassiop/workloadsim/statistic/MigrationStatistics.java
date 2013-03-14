@@ -140,7 +140,7 @@ public class MigrationStatistics extends StatisticsModule {
 
 		measurement = measurementModule.measureSystem(currentTime);
 
-		servers = virtualizationManager.getActiveServerList();
+		servers = virtualizationManager.getActiveServersList();
 
 		statistics.put(Constants.STATISTIC_VIRTUAL_MACHINES, new Integer(
 				measurement.getActualDemand().size()));
@@ -192,6 +192,10 @@ public class MigrationStatistics extends StatisticsModule {
 					/ server.getCapacity(ResourceType.MEMORY);
 			servers_load_i++;
 		}
+
+		slaViolations += ((Integer) statistics
+				.get(Constants.STATISTIC_VIRTUAL_MACHINES_NOT_ALLOCATED))
+				.intValue();
 
 		StandardDeviation stdDeviation = new StandardDeviation();
 		Mean mean = new Mean();

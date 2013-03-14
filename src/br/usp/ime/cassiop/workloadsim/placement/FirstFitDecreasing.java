@@ -60,7 +60,7 @@ public class FirstFitDecreasing implements PlacementWithPowerOffStrategy {
 		}
 
 		servers = new ArrayList<Server>(
-				virtualizationManager.getActiveServerList());
+				virtualizationManager.getActiveServersList());
 
 		vms_not_allocated = 0;
 
@@ -123,10 +123,8 @@ public class FirstFitDecreasing implements PlacementWithPowerOffStrategy {
 			Server inactiveServer = virtualizationManager
 					.getNextInactiveServer(vm);
 			if (inactiveServer != null) {
-				try {
-					virtualizationManager.setVmToServer(vm, inactiveServer);
-				} catch (ServerOverloadedException ex) {
-				}
+				virtualizationManager.setVmToServer(vm, inactiveServer);
+
 				servers.add(inactiveServer);
 
 			} else {

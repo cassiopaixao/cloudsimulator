@@ -7,7 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.environment.GoogleCluster;
-import br.usp.ime.cassiop.workloadsim.environment.IdealCluster;
+import br.usp.ime.cassiop.workloadsim.environment.HomogeneousCluster;
+import br.usp.ime.cassiop.workloadsim.environment.TestCluster;
 import br.usp.ime.cassiop.workloadsim.forecasting.ErrorInjectorForecasting;
 import br.usp.ime.cassiop.workloadsim.forecasting.MeasurementsMeanForecasting;
 import br.usp.ime.cassiop.workloadsim.forecasting.WorkloadForecasting;
@@ -16,6 +17,8 @@ import br.usp.ime.cassiop.workloadsim.migrationcontrol.KhannaMigrationControl;
 import br.usp.ime.cassiop.workloadsim.migrationcontrol.MigrateIfChange;
 import br.usp.ime.cassiop.workloadsim.migrationcontrol.MigrateIfChangeAndServerBecomesOverloaded;
 import br.usp.ime.cassiop.workloadsim.migrationcontrol.NoMigrationControl;
+import br.usp.ime.cassiop.workloadsim.placement.AlmostWorstFit;
+import br.usp.ime.cassiop.workloadsim.placement.AlmostWorstFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.BestFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.FirstFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.KhannaPlacement;
@@ -29,10 +32,11 @@ import br.usp.ime.cassiop.workloadsim.util.Constants;
 import br.usp.ime.cassiop.workloadsim.workload.GoogleClusterdataFileWorkload;
 import br.usp.ime.cassiop.workloadsim.workload.GoogleClusterdataWorkload;
 import br.usp.ime.cassiop.workloadsim.workload.GoogleWorkload;
+import br.usp.ime.cassiop.workloadsim.workload.TestWorkload;
 
 public class ExecutionBuilder {
 	public enum PlacementType {
-		FIRST_FIT, BEST_FIT, WORST_FIT, KHANNA
+		FIRST_FIT, BEST_FIT, WORST_FIT, KHANNA, ALMOST_WORST_FIT, ALMOST_WORST_FIT_DEC
 	};
 
 	public enum StatisticsType {
@@ -40,11 +44,11 @@ public class ExecutionBuilder {
 	}
 
 	public enum WorkloadToUse {
-		GOOGLE_TRACE_1, GOOGLE_TRACE_2, GOOGLE_TRACE_FILE_2, NONE
+		GOOGLE_TRACE_1, GOOGLE_TRACE_2, GOOGLE_TRACE_FILE_2, TEST_TRACE, NONE
 	}
 
 	public enum EnvironmentToUse {
-		HOMOGENEOUS, GOOGLE
+		HOMOGENEOUS, GOOGLE, TEST
 	}
 
 	public enum ForecasterToUse {
@@ -164,6 +168,9 @@ public class ExecutionBuilder {
 			break;
 		case GOOGLE:
 			sb.append("googlecluster_");
+			break;
+		case TEST:
+			sb.append("test_");
 		}
 
 		switch (forecaster) {
@@ -204,6 +211,13 @@ public class ExecutionBuilder {
 			break;
 		case KHANNA:
 			sb.append("khanna_");
+			break;
+		case ALMOST_WORST_FIT:
+			sb.append("awf_");
+			break;
+		case ALMOST_WORST_FIT_DEC:
+			sb.append("awfd_");
+			break;
 		}
 
 		switch (statistics) {
@@ -231,6 +245,9 @@ public class ExecutionBuilder {
 			break;
 		case GOOGLE_TRACE_FILE_2:
 			sb.append("30d-file");
+			break;
+		case TEST_TRACE:
+			sb.append("test");
 			break;
 		case NONE:
 		}
@@ -308,6 +325,12 @@ public class ExecutionBuilder {
 		case WORST_FIT:
 			canonicalPath = canonicalPath.concat("wfd/");
 			break;
+		case ALMOST_WORST_FIT:
+			canonicalPath = canonicalPath.concat("awf/");
+			break;
+		case ALMOST_WORST_FIT_DEC:
+			canonicalPath = canonicalPath.concat("awfd/");
+			break;
 		case KHANNA:
 		}
 
@@ -372,6 +395,10 @@ public class ExecutionBuilder {
 			return new FirstFitDecreasing();
 		case KHANNA:
 			return new KhannaPlacement();
+		case ALMOST_WORST_FIT:
+			return new AlmostWorstFit();
+		case ALMOST_WORST_FIT_DEC:
+			return new AlmostWorstFitDecreasing();
 		}
 		return new FirstFitDecreasing();
 	}
@@ -379,9 +406,11 @@ public class ExecutionBuilder {
 	private Environment getEnvironment(EnvironmentToUse environment) {
 		switch (environment) {
 		case HOMOGENEOUS:
-			return new IdealCluster();
+			return new HomogeneousCluster();
 		case GOOGLE:
 			return new GoogleCluster();
+		case TEST:
+			return new TestCluster();
 		}
 		logger.info("Could not instantiate the environment {}",
 				environment.toString());
@@ -414,6 +443,8 @@ public class ExecutionBuilder {
 				return GoogleClusterdataFileWorkload.build();
 			case NONE:
 				return null;
+			case TEST_TRACE:
+				return TestWorkload.build();
 			}
 		} catch (Exception ex) {
 			logger.info("Could not instantiate the workload {}",

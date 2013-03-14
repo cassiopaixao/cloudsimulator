@@ -2,22 +2,19 @@ package br.usp.ime.cassiop.workloadsim.placement;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import br.usp.ime.cassiop.workloadsim.PhysicalMachineTypeChooser;
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
 import br.usp.ime.cassiop.workloadsim.exceptions.ServerOverloadedException;
-import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
+import br.usp.ime.cassiop.workloadsim.placement.KhannaTypeChooser.ServerOrderedByResidualCapacityComparator;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
-import br.usp.ime.cassiop.workloadsim.util.MathUtils;
 
 public class KhannaPlacement implements PlacementWithPowerOffStrategy {
 
@@ -70,7 +67,7 @@ public class KhannaPlacement implements PlacementWithPowerOffStrategy {
 
 		vms_not_allocated = 0;
 		List<Server> servers = new ArrayList<Server>(
-				virtualizationManager.getActiveServerList());
+				virtualizationManager.getActiveServersList());
 
 		for (VirtualMachine vm : demand) {
 			try {
@@ -144,10 +141,8 @@ public class KhannaPlacement implements PlacementWithPowerOffStrategy {
 			Server inactivePm = virtualizationManager.getNextInactiveServer(vm,
 					new KhannaTypeChooser());
 			if (inactivePm != null) {
-				try {
-					virtualizationManager.setVmToServer(vm, inactivePm);
-				} catch (ServerOverloadedException ex) {
-				}
+				virtualizationManager.setVmToServer(vm, inactivePm);
+
 				servers.add(inactivePm);
 			} else {
 				logger.info(
@@ -160,86 +155,6 @@ public class KhannaPlacement implements PlacementWithPowerOffStrategy {
 
 	}
 
-	public class KhannaTypeChooser implements PhysicalMachineTypeChooser {
-
-		public Server chooseServerType(List<Server> machineTypes,
-				VirtualMachine vmDemand) {
-
-			Collections.sort(machineTypes,
-					new ServerOrderedByResidualCapacityComparator());
-
-			Server selectedMachine = null;
-
-			for (Server server : machineTypes) {
-				if (server.canHost(vmDemand, false)) {
-					selectedMachine = server;
-					break;
-				}
-			}
-
-			if (selectedMachine == null) {
-				logger.info("No inactive physical machine can satisfy the virtual machine's demand. Activating the physical machine with lowest loss of performance.");
-
-				Server lessLossOfPerformanceMachine = lessLossMachine(
-						machineTypes, vmDemand);
-
-				if (lessLossOfPerformanceMachine == null) {
-					logger.info("There is no inactive physical machine. Need to overload one.");
-					return null;
-				}
-
-				selectedMachine = lessLossOfPerformanceMachine;
-			}
-			return selectedMachine;
-		}
-
-		private Server lessLossMachine(List<Server> machineTypes,
-				VirtualMachine vmDemand) {
-			Server lessLossOfPerformanceMachine = null;
-			double lessLossOfPerformance = Double.MAX_VALUE;
-
-			for (Server pm : machineTypes) {
-				if (!pm.canHost(vmDemand)) {
-					if (lossOfPerformance(pm, vmDemand) < lessLossOfPerformance) {
-						lessLossOfPerformance = lossOfPerformance(pm, vmDemand);
-						lessLossOfPerformanceMachine = pm;
-					}
-				}
-			}
-			return lessLossOfPerformanceMachine;
-		}
-
-		private double lossOfPerformance(Server pm, VirtualMachine vm) {
-			double leavingCpu, leavingMem;
-			double sum = 0;
-			leavingCpu = pm.getFreeResource(ResourceType.CPU)
-					- vm.getDemand(ResourceType.CPU);
-			leavingMem = pm.getFreeResource(ResourceType.MEMORY)
-					- vm.getDemand(ResourceType.MEMORY);
-
-			sum += (leavingCpu < 0) ? -leavingCpu : 0;
-			sum += (leavingMem < 0) ? -leavingMem : 0;
-
-			return sum;
-		}
-
-	}
-
-	public class ServerOrderedByResidualCapacityComparator implements
-			Comparator<Server> {
-		@Override
-		public int compare(Server o1, Server o2) {
-			if (o1.getResidualCapacity() < o2.getResidualCapacity()) {
-				return -1;
-			} else if (MathUtils.equals(o1.getResidualCapacity(),
-					o2.getResidualCapacity())) {
-				return 0;
-			} else {
-				return 1;
-			}
-		}
-
-	}
 
 	@Override
 	public void setParameters(Map<String, Object> parameters) throws Exception {

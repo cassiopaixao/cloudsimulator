@@ -1,6 +1,7 @@
 package br.usp.ime.cassiop.workloadsim.migrationcontrol;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -36,65 +37,35 @@ public class KhannaMigrationControl implements MigrationController {
 			isInDemand.put(vm.getName(), vm);
 		}
 
-		Map<String, Server> activeServersMap = new HashMap<String, Server>();
-		for (Server server : virtualizationManager.getActiveServerList()) {
-			activeServersMap.put(server.getName(), server);
-		}
+		Collection<Server> activeServers = virtualizationManager
+				.getActiveServersList();
 
-		int newVirtualMachines = demand.size();
-		VirtualMachine vmInDemand = null;
-		VirtualMachine activeVm = null;
-
-		List<String> almostOverloadedServers = new LinkedList<String>();
-
-		List<String> shouldNotReallocate = new LinkedList<String>();
-
-		Map<String, VirtualMachine> activeVmsMap = virtualizationManager
-				.getActiveVirtualMachines();
+		int virtualMachinesToReallocate = 0;
+		
+		List<Server> almostOverloadedServers = new LinkedList<Server>();
 
 		// for each vm already allocated
-		List<String> activeVms = new ArrayList<String>(activeVmsMap.keySet());
-		for (String activeVmName : activeVms) {
-			if (isInDemand.containsKey(activeVmName)) {
-				newVirtualMachines--;
-
-				vmInDemand = isInDemand.get(activeVmName);
-				activeVm = activeVmsMap.get(activeVmName);
-
-				isInDemand.remove(activeVmName);
-
-				// updatesVm
-				// and identify which servers becomes overloaded, or almost
-				// overloaded
+		for (Server server : activeServers) {
+			for (VirtualMachine vm : server.getVirtualMachines()) {
+				// updates demands
 				try {
-					activeVm.getCurrentServer().updateVm(vmInDemand);
-
-					if (activeVm.getCurrentServer().isAlmostOverloaded()) {
-						if (!almostOverloadedServers.contains(activeVm
-								.getCurrentServer().getName())) {
-							almostOverloadedServers.add(activeVm
-									.getCurrentServer().getName());
-						}
-					}
-
+					server.updateVm(isInDemand.get(vm.getName()));
 				} catch (ServerOverloadedException ex) {
-					if (!almostOverloadedServers.contains(activeVm
-							.getCurrentServer().getName())) {
-						almostOverloadedServers.add(activeVm.getCurrentServer()
-								.getName());
-					}
+					// will be correctly handled
 				}
+			}
+			// checks if the server is almost overloaded
+			if (server.isAlmostOverloaded()) {
+				almostOverloadedServers.add(server);
 			}
 		}
 
 		List<VirtualMachine> vms = null;
-		for (String overloadedServerName : almostOverloadedServers) {
-			Server overloadedServer = activeServersMap
-					.get(overloadedServerName);
-
+		for (Server overloadedServer : almostOverloadedServers) {
 			vms = new ArrayList<VirtualMachine>(
 					overloadedServer.getVirtualMachines());
 
+			// orders virtual machines ascendently by resource utilization
 			Collections.sort(vms, new Comparator<VirtualMachine>() {
 
 				@Override
@@ -113,24 +84,21 @@ public class KhannaMigrationControl implements MigrationController {
 
 			for (VirtualMachine smallestVm : vms) {
 				if (!overloadedServer.isAlmostOverloaded()) {
-					break;
+					// when the server isn't overloaded anymore, the VMs left
+					// shouln't be reallocated.
+					for (VirtualMachine vm : overloadedServer
+							.getVirtualMachines()) {
+						isInDemand.remove(vm.getName());
+					}
 				}
-
 				virtualizationManager.deallocate(smallestVm);
-
-				isInDemand.put(smallestVm.getName(), smallestVm);
+				virtualMachinesToReallocate++;
 			}
 		}
 
-		for (String vmName : shouldNotReallocate) {
-			isInDemand.remove(vmName);
-		}
-
-		statisticsModule.setStatisticValue(
-				Constants.STATISTIC_NEW_VIRTUAL_MACHINES, newVirtualMachines);
 		statisticsModule.setStatisticValue(
 				Constants.STATISTIC_VIRTUAL_MACHINES_TO_REALLOCATE,
-				isInDemand.size() - newVirtualMachines);
+				virtualMachinesToReallocate);
 
 		return new ArrayList<VirtualMachine>(isInDemand.values());
 	}

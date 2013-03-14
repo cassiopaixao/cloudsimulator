@@ -135,10 +135,6 @@ public class ExecutionConfiguration extends Thread {
 		try {
 			while (currentTime <= lastTime) {
 
-				if (currentTime == 15600 || currentTime == 9000) {
-					System.out.println("error?");
-				}
-				
 				demand = forecastingModule.getPredictions(currentTime);
 
 				virtualizationManager

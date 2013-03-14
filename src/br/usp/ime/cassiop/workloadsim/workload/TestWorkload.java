@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -12,42 +11,31 @@ import br.usp.ime.cassiop.workloadsim.Workload;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 
-public class GoogleClusterdataFileWorkload extends Workload {
-
-	private List<VirtualMachine> lastReadState = null;
-	private long lastReadStateTime = -1;
+public class TestWorkload extends Workload {
 
 	// private static final Charset charset = Charset.forName("UTF-8");
 
 	// private String filenamePattern =
 	// "/var/tmp/cassiop/res/workloads/%d-%d.csv";
-	private String filenamePattern = "res/workloads/%d-%d.csv";
+	private String filenamePattern = "res/workloads_tests/%d-%d.csv";
 
-	public static GoogleClusterdataFileWorkload build() throws Exception {
+	public static TestWorkload build() throws Exception {
 		long initialTime = 600;
 		long timeInterval = 300;
-		// long lastTime = 1800; // 1200 20min de workload
-		// long lastTime = 4200; // 4200 1h de workload
-		// long lastTime = 25800; // 25800 7h de workload
-		 long lastTime = 87000; // 87000 24h de workload
+		long lastTime = 900;
 
-
-		GoogleClusterdataFileWorkload gw = new GoogleClusterdataFileWorkload(
+		TestWorkload gw = new TestWorkload(
 				initialTime, timeInterval, lastTime);
 
 		return gw;
 	}
 
-	public GoogleClusterdataFileWorkload(long initialTime, long timeInterval,
+	public TestWorkload(long initialTime, long timeInterval,
 			long lastTime) {
 		super(initialTime, timeInterval, lastTime);
 	}
 
 	public List<VirtualMachine> getDemand(long time) {
-
-		if (time == lastReadStateTime) {
-			return lastReadState;
-		}
 
 		List<VirtualMachine> vmList = new LinkedList<VirtualMachine>();
 
@@ -74,9 +62,6 @@ public class GoogleClusterdataFileWorkload extends Workload {
 				e.printStackTrace();
 			}
 		}
-
-		lastReadState = new ArrayList<VirtualMachine>(vmList);
-		lastReadStateTime = time;
 
 		return vmList;
 	}

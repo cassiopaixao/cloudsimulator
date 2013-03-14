@@ -57,7 +57,7 @@ public class AllocationLog extends StatisticsModule {
 	public void generateStatistics(long currentTime) throws Exception {
 
 		Collection<Server> servers = virtualizationManager
-				.getActiveServerList();
+				.getActiveServersList();
 
 		int serversUsed = servers.size();
 

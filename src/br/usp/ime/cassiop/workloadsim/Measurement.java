@@ -25,9 +25,6 @@ public class Measurement {
 
 	public double getVmActualDemand(VirtualMachine vm, ResourceType type) {
 		VirtualMachine actualVm = actualDemand.get(vm.getName());
-		if (actualVm == null) {
-			System.out.println(vm.toString());
-		}
 		return actualVm.getDemand(type);
 	}
 

@@ -2,7 +2,6 @@ package br.usp.ime.cassiop.workloadsim;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,12 +9,14 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import br.usp.ime.cassiop.workloadsim.environment.IdealCluster;
+import br.usp.ime.cassiop.workloadsim.environment.HomogeneousCluster;
 import br.usp.ime.cassiop.workloadsim.exceptions.ServerNotEmptyException;
+import br.usp.ime.cassiop.workloadsim.exceptions.ServerOverloadedException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
-import br.usp.ime.cassiop.workloadsim.model.ResourceType;
+import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
+import br.usp.ime.cassiop.workloadsim.placement.FirstFitTypeChooser;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
 public class VirtualizationManager implements Parametrizable {
@@ -51,11 +52,11 @@ public class VirtualizationManager implements Parametrizable {
 	public VirtualizationManager() {
 		serverMap = new HashMap<String, Server>();
 		vmMap = new HashMap<String, VirtualMachine>();
-		setEnvironment(new IdealCluster());
+		setEnvironment(new HomogeneousCluster());
 	}
 
 	public void setVmToServer(VirtualMachine vm, Server server)
-			throws Exception {
+			throws UnknownVirtualMachineException, UnknownServerException {
 		if (serverMap.get(server.getName()) != null
 				&& serverMap.get(server.getName()) == server) {
 
@@ -65,7 +66,10 @@ public class VirtualizationManager implements Parametrizable {
 						server.getName(), vm.getName());
 			}
 
-			server.addVirtualMachine(vm);
+			try {
+				server.addVirtualMachine(vm);
+			} catch (ServerOverloadedException ex) {
+			}
 
 			vmMap.put(vm.getName(), vm);
 
@@ -78,11 +82,11 @@ public class VirtualizationManager implements Parametrizable {
 						vm.getResourceUtilization());
 			}
 		} else {
-			throw new Exception("Unknown destination server.");
+			throw new UnknownServerException();
 		}
 	}
 
-	public Collection<Server> getActiveServerList() {
+	public Collection<Server> getActiveServersList() {
 		return serverMap.values();
 	}
 
@@ -103,16 +107,16 @@ public class VirtualizationManager implements Parametrizable {
 			return null;
 		}
 
-		Server pm = environment.getMachineOfType(selectedMachine);
+		Server server = environment.getMachineOfType(selectedMachine);
 
-		pm.setName(new Long(++usedServers).toString());
+		server.setName(new Long(++usedServers).toString());
 
-		logger.debug("PhysicalMachine {} activated: {}", pm.getName(),
-				pm.toString());
+		logger.debug("PhysicalMachine {} activated: {}", server.getName(),
+				server.toString());
 
-		serverMap.put(pm.getName(), pm);
+		serverMap.put(server.getName(), server);
 
-		return pm;
+		return server;
 	}
 
 	public void clear() {
@@ -120,64 +124,6 @@ public class VirtualizationManager implements Parametrizable {
 			pm.clear();
 		}
 		environment.clear();
-	}
-
-	public class FirstFitTypeChooser implements PhysicalMachineTypeChooser {
-
-		public Server chooseServerType(List<Server> machineTypes,
-				VirtualMachine vmDemand) {
-			Server selectedMachine = null;
-
-			Collections.sort(machineTypes);
-
-			for (Server server : machineTypes) {
-				if (server.canHost(vmDemand)) {
-					selectedMachine = server;
-					break;
-				}
-			}
-
-			if (selectedMachine == null) {
-				logger.info("No inactive physical machine can satisfy the virtual machine's demand. Activating the physical machine with lowest loss of performance.");
-
-				Server lessLossOfPerformanceMachine = null;
-				double lessLossOfPerformance = Double.MAX_VALUE;
-
-				for (Server pm : machineTypes) {
-					if (!pm.canHost(vmDemand)) {
-						if (lossOfPerformance(pm, vmDemand) < lessLossOfPerformance) {
-							lessLossOfPerformance = lossOfPerformance(pm,
-									vmDemand);
-							lessLossOfPerformanceMachine = pm;
-						}
-					}
-				}
-
-				if (lessLossOfPerformanceMachine == null) {
-					logger.info("There is no inactive physical machine. Need to overload one.");
-					return null;
-				}
-
-				selectedMachine = lessLossOfPerformanceMachine;
-			}
-
-			return selectedMachine;
-		}
-
-		private double lossOfPerformance(Server pm, VirtualMachine vm) {
-			double leavingCpu, leavingMem;
-			double sum = 0;
-			leavingCpu = pm.getFreeResource(ResourceType.CPU)
-					- vm.getDemand(ResourceType.CPU);
-			leavingMem = pm.getFreeResource(ResourceType.MEMORY)
-					- vm.getDemand(ResourceType.MEMORY);
-
-			sum += (leavingCpu < 0) ? -leavingCpu : 0;
-			sum += (leavingMem < 0) ? -leavingMem : 0;
-
-			return sum;
-		}
-
 	}
 
 	@Override
@@ -207,20 +153,7 @@ public class VirtualizationManager implements Parametrizable {
 			keepRunning.put(vm.getName(), null);
 		}
 
-		// List<String> activeVms = new ArrayList<String>(vmMap.keySet());
-		// VirtualMachine vm = null;
-		// // for each vm already allocated
-		// for (String vmName : activeVms) {
-		// // if it isn't in the new demands' list
-		// if (!keepRunning.containsKey(vmName)) {
-		// vm = vmMap.get(vmName);
-		// // and it's endTime was reached
-		// if (vm.getEndTime() <= currentTime) {
-		// // should deallocate the resources.
-		// deallocate(vm);
-		// }
-		// }
-		// }
+		int newVirtualMachines = demand.size();
 
 		for (Server server : serverMap.values()) {
 			List<VirtualMachine> vms = new ArrayList<VirtualMachine>(
@@ -230,9 +163,15 @@ public class VirtualizationManager implements Parametrizable {
 					if (vm.getEndTime() <= currentTime) {
 						deallocate(vm);
 					}
+				} else {
+					newVirtualMachines--;
 				}
 			}
 		}
+
+		statisticsModule.setStatisticValue(
+				Constants.STATISTIC_NEW_VIRTUAL_MACHINES, newVirtualMachines);
+
 	}
 
 	public void deallocate(VirtualMachine vm) throws Exception {

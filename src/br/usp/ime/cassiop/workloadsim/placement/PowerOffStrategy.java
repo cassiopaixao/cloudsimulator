@@ -8,6 +8,7 @@ import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
+import br.usp.ime.cassiop.workloadsim.util.MathUtils;
 
 public class PowerOffStrategy {
 
@@ -26,7 +27,8 @@ public class PowerOffStrategy {
 		int servers_turned_off = 0;
 
 		for (Server server : servers) {
-			if (server.getResourceUtilization() <= lowUtilization) {
+			if (MathUtils.lessThanOrEquals(server.getResourceUtilization(),
+					lowUtilization)) {
 				List<VirtualMachine> shouldMigrate = new LinkedList<VirtualMachine>();
 				List<VirtualMachine> vmsOnServer = new ArrayList<VirtualMachine>(
 						server.getVirtualMachines());

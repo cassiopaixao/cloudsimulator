@@ -2,7 +2,7 @@ package br.usp.ime.cassiop.workloadsim.util;
 
 // Reference: http://stackoverflow.com/questions/356807/java-double-comparison-epsilon
 public class MathUtils {
-	private final static double EPSILON = 0.00000000001;
+	public final static double EPSILON = 0.00000000001;
 
 	/**
 	 * Returns true if two doubles are considered equal.
@@ -14,7 +14,7 @@ public class MathUtils {
 	 * @return true true if two doubles are considered equal.
 	 */
 	public static boolean equals(double a, double b) {
-		return a == b ? true : Math.abs(a - b) < EPSILON;
+		return equals(a, b, EPSILON);
 	}
 
 	/**
@@ -33,7 +33,7 @@ public class MathUtils {
 	 * @return true if a is considered equal to b.
 	 */
 	public static boolean equals(double a, double b, double epsilon) {
-		return a == b ? true : Math.abs(a - b) < epsilon;
+		return Math.abs(a - b) < epsilon;
 	}
 
 	/**
@@ -99,4 +99,13 @@ public class MathUtils {
 	public static boolean lessThan(double a, double b, double epsilon) {
 		return b - a > epsilon;
 	}
+
+	public static boolean lessThanOrEquals(double a, double b) {
+		return lessThanOrEquals(a, b, EPSILON);
+	}
+
+	public static boolean lessThanOrEquals(double a, double b, double epsilon) {
+		return b - a >= epsilon || Math.abs(b - a) <= epsilon;
+	}
+
 }

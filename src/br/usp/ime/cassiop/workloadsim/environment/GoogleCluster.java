@@ -1,30 +1,18 @@
 package br.usp.ime.cassiop.workloadsim.environment;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import br.usp.ime.cassiop.workloadsim.Environment;
-import br.usp.ime.cassiop.workloadsim.model.Server;
-import br.usp.ime.cassiop.workloadsim.model.ResourceType;
-import br.usp.ime.cassiop.workloadsim.util.Constants;
 
-public class GoogleCluster implements Environment {
-	private Map<Server, MachineStatus> environmentStatus = null;
-
-	public Map<Server, MachineStatus> getEnvironmentStatus() {
-		return environmentStatus;
-	}
-
-	private double environmentMultiplier = 1.0;
+public class GoogleCluster extends Environment {
 
 	public GoogleCluster() {
+		super();
 		initialize();
 	}
 
-	private void initialize() {
-		environmentStatus = new HashMap<Server, MachineStatus>();
+	protected void initialize() {
+		clear(true);
 
 		// NumberOfMachines CPUs Memory
 		// 6732 0.50 0.50
@@ -51,101 +39,9 @@ public class GoogleCluster implements Environment {
 
 	}
 
-	private void addPmStatus(int machinesAvailable, double cpuCapacity,
-			double memoryCapacity) {
-		if ((int) (machinesAvailable * environmentMultiplier) == 0) {
-			return;
-		}
-
-		Server pm = new Server();
-		MachineStatus status = new MachineStatus();
-
-		status.setAvailable((int) (machinesAvailable * environmentMultiplier));
-		pm.setCapacity(ResourceType.CPU, cpuCapacity);
-		pm.setCapacity(ResourceType.MEMORY, memoryCapacity);
-
-		environmentStatus.put(pm, status);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * br.usp.ime.cassiop.workloadsim.environment.Environment#getMachineOfType
-	 * (br.usp.ime.cassiop.workloadsim.model.PhysicalMachine)
-	 */
-	@Override
-	public Server getMachineOfType(Server pm)
-			throws Exception {
-		MachineStatus status = environmentStatus.get(pm);
-		if (status == null) {
-			throw new Exception(
-					"There is no Physical Machines of this type in the environment.");
-		}
-
-		status.useOne();
-
-		Server newPm = new Server();
-		newPm.setCapacity(ResourceType.CPU, pm.getCapacity(ResourceType.CPU));
-		newPm.setCapacity(ResourceType.MEMORY,
-				pm.getCapacity(ResourceType.MEMORY));
-
-		return newPm;
-
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * br.usp.ime.cassiop.workloadsim.environment.Environment#getMachineTypes()
-	 */
-	@Override
-	public List<Server> getAvailableMachineTypes() {
-		List<Server> availableMachines = new ArrayList<Server>();
-
-		for (Server pm : environmentStatus.keySet()) {
-			if (environmentStatus.get(pm).getAvailable() > environmentStatus
-					.get(pm).getUsed()) {
-				availableMachines.add(pm);
-			}
-		}
-
-		return availableMachines;
-	}
-
-	@Override
-	public void clear() {
-		for (MachineStatus ms : environmentStatus.values()) {
-			ms.clear();
-		}
-	}
-
 	@Override
 	public void setParameters(Map<String, Object> parameters) throws Exception {
-		Object o = parameters.get(Constants.PARAMETER_ENVIRONMENT_MULTIPLIER);
-		if (o instanceof Double) {
-			setEnvironmentMultiplier(((Double) o).doubleValue());
-		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_ENVIRONMENT_MULTIPLIER));
-		}
+		super.setParameters(parameters);
 	}
-
-	private void setEnvironmentMultiplier(double environmentMultiplier) {
-		this.environmentMultiplier = environmentMultiplier;
-		initialize();
-	}
-
-	@Override
-	public void turnOffMachineOfType(Server server) throws Exception {
-		for (Server sv : environmentStatus.keySet()) {
-			if (server.getType().equals(sv.getType())) {
-				environmentStatus.get(sv).turnOffOne();
-				break;
-			}
-		}
-	}
-
 
 }

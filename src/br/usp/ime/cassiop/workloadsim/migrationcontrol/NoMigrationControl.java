@@ -35,7 +35,7 @@ public class NoMigrationControl implements MigrationController {
 		int newVirtualMachines = demand.size();
 
 		// for each vm already allocated
-		for (Server server : virtualizationManager.getActiveServerList()) {
+		for (Server server : virtualizationManager.getActiveServersList()) {
 			for (VirtualMachine vm : server.getVirtualMachines()) {
 				shouldDeallocate.add(vm);
 				// if it is in the updated demand

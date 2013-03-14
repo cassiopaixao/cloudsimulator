@@ -87,10 +87,10 @@ abstract class Machine implements Comparable<Machine> {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(name).append(':');
-		sb.append("CPU(").append(resourceCpu).append(");");
-		sb.append("MEM(").append(resourceMem).append(");");
+		sb.append(String.format("CPU(%.2f)", resourceCpu)).append(";");
+		sb.append(String.format("MEM(%.2f)", resourceMem)).append(".");
 
-		return sb.replace(sb.length() - 1, sb.length(), ".").toString();
+		return sb.toString();
 	}
 
 	@Override

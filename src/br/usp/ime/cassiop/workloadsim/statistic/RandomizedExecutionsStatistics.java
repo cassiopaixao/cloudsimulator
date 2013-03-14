@@ -99,7 +99,7 @@ public class RandomizedExecutionsStatistics extends StatisticsModule {
 
 	@Override
 	public void generateStatistics(long currentTime) throws Exception {
-		physicalMachines = virtualizationManager.getActiveServerList();
+		physicalMachines = virtualizationManager.getActiveServersList();
 
 		measurement = measurementModule.measureSystem(currentTime);
 

@@ -15,7 +15,7 @@ import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
-public class BestFitDecreasing implements PlacementWithPowerOffStrategy {
+public class AlmostWorstFitDecreasing implements PlacementWithPowerOffStrategy {
 
 	private VirtualizationManager virtualizationManager = null;
 
@@ -30,7 +30,8 @@ public class BestFitDecreasing implements PlacementWithPowerOffStrategy {
 		this.statisticsModule = statisticsModule;
 	}
 
-	final Logger logger = LoggerFactory.getLogger(BestFitDecreasing.class);
+	final Logger logger = LoggerFactory
+			.getLogger(AlmostWorstFitDecreasing.class);
 
 	/*
 	 * (non-Javadoc)
@@ -63,16 +64,17 @@ public class BestFitDecreasing implements PlacementWithPowerOffStrategy {
 		Collections.sort(demand);
 		Collections.reverse(demand);
 
-		vms_not_allocated = 0;
-
 		servers = new ArrayList<Server>(
 				virtualizationManager.getActiveServersList());
+
+		vms_not_allocated = 0;
 
 		for (VirtualMachine vm : demand) {
 			try {
 				allocate(vm, servers);
 			} catch (ServerOverloadedException ex) {
 			}
+
 		}
 
 		servers_turned_off = PowerOffStrategy.powerOff(servers, this,
@@ -109,31 +111,41 @@ public class BestFitDecreasing implements PlacementWithPowerOffStrategy {
 	@Override
 	public void allocate(VirtualMachine vm, List<Server> servers)
 			throws Exception {
-		Server bestFitServer = null;
-		double bestFitLeavingResource = Double.MAX_VALUE;
 
-		for (Server pm : virtualizationManager.getActiveServersList()) {
-			if (pm.canHost(vm)) {
-				// TODO can optimize this? the leaving resource is
-				// calculated for every pm and every vm
-				// maybe a "freeResourceFactor" (cpu * mem OR cpu + mem).
-				// sum is better, 'cause cpu or mem could be zero.
+		Server worstFitServer = null;
+		double worstFitLeavingResource = -1.0;
 
-				// stores the best-fit allocation
-				if (PlacementUtils.leavingResource(pm, vm) < bestFitLeavingResource) {
-					bestFitServer = pm;
-					bestFitLeavingResource = PlacementUtils.leavingResource(pm,
-							vm);
+		Server almostWorstFitServer = null;
+		double almostWorstFitLeavingResource = -1.0;
+
+		double leavingResource;
+
+		for (Server server : virtualizationManager.getActiveServersList()) {
+			if (server.canHost(vm)) {
+				// stores the worst-fit allocation
+				leavingResource = PlacementUtils.leavingResource(server, vm);
+
+				if (leavingResource > worstFitLeavingResource) {
+					almostWorstFitServer = worstFitServer;
+					almostWorstFitLeavingResource = worstFitLeavingResource;
+
+					worstFitServer = server;
+					worstFitLeavingResource = leavingResource;
+				} else if (leavingResource > almostWorstFitLeavingResource) {
+					almostWorstFitServer = server;
+					almostWorstFitLeavingResource = leavingResource;
 				}
 
 			}
 		}
 
-		if (bestFitServer != null) {
-			virtualizationManager.setVmToServer(vm, bestFitServer);
+		if (almostWorstFitServer != null) {
+			virtualizationManager.setVmToServer(vm, almostWorstFitServer);
+		} else if (worstFitServer != null) {
+			virtualizationManager.setVmToServer(vm, worstFitServer);
 		} else {
 			Server inactivePm = virtualizationManager.getNextInactiveServer(vm,
-					new BestFitTypeChooser());
+					new AlmostWorstFitTypeChooser());
 			if (inactivePm != null) {
 				virtualizationManager.setVmToServer(vm, inactivePm);
 

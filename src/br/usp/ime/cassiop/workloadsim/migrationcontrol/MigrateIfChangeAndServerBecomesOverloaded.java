@@ -38,7 +38,6 @@ public class MigrateIfChangeAndServerBecomesOverloaded implements
 
 		int newVirtualMachines = demand.size();
 		VirtualMachine vmInDemand = null;
-		VirtualMachine activeVm = null;
 
 		List<String> shouldNotReallocate = new LinkedList<String>();
 
@@ -46,12 +45,11 @@ public class MigrateIfChangeAndServerBecomesOverloaded implements
 				.getActiveVirtualMachines();
 
 		// for each vm already allocated
-		List<String> activeVms = new ArrayList<String>(activeVmsMap.keySet());
-		for (String activeVmName : activeVms) {
-			if (isInDemand.containsKey(activeVmName)) {
+		List<VirtualMachine> activeVms = new ArrayList<VirtualMachine>(activeVmsMap.values());
+		for (VirtualMachine activeVm : activeVms) {
+			if (isInDemand.containsKey(activeVm.getName())) {
 				newVirtualMachines--;
-				vmInDemand = isInDemand.get(activeVmName);
-				activeVm = activeVmsMap.get(activeVmName);
+				vmInDemand = isInDemand.get(activeVm.getName());
 
 				// check if the demand is bigger and if server becomes
 				// overloaded
@@ -106,12 +104,12 @@ public class MigrateIfChangeAndServerBecomesOverloaded implements
 	}
 
 	private boolean demandIsBigger(VirtualMachine vm, VirtualMachine newVm) {
-		if (!MathUtils.lessThan(vm.getDemand(ResourceType.CPU),
-				newVm.getDemand(ResourceType.CPU))) {
+		if (MathUtils.greaterThan(newVm.getDemand(ResourceType.CPU),
+				vm.getDemand(ResourceType.CPU))) {
 			return true;
 		}
-		if (!MathUtils.lessThan(vm.getDemand(ResourceType.MEMORY),
-				newVm.getDemand(ResourceType.MEMORY))) {
+		if (MathUtils.greaterThan(newVm.getDemand(ResourceType.MEMORY),
+				vm.getDemand(ResourceType.MEMORY))) {
 			return true;
 		}
 		return false;

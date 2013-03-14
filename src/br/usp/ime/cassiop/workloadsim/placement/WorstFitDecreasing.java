@@ -8,11 +8,9 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import br.usp.ime.cassiop.workloadsim.PhysicalMachineTypeChooser;
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
 import br.usp.ime.cassiop.workloadsim.exceptions.ServerOverloadedException;
-import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
@@ -66,7 +64,7 @@ public class WorstFitDecreasing implements PlacementWithPowerOffStrategy {
 		Collections.reverse(demand);
 
 		servers = new ArrayList<Server>(
-				virtualizationManager.getActiveServerList());
+				virtualizationManager.getActiveServersList());
 
 		vms_not_allocated = 0;
 
@@ -75,7 +73,6 @@ public class WorstFitDecreasing implements PlacementWithPowerOffStrategy {
 				allocate(vm, servers);
 			} catch (ServerOverloadedException ex) {
 			}
-
 		}
 
 		servers_turned_off = PowerOffStrategy.powerOff(servers, this,
@@ -87,76 +84,6 @@ public class WorstFitDecreasing implements PlacementWithPowerOffStrategy {
 
 		statisticsModule.addToStatisticValue(
 				Constants.STATISTIC_SERVERS_TURNED_OFF, servers_turned_off);
-
-	}
-
-	private double leavingResource(Server pm, VirtualMachine vm) {
-		double leavingCpu, leavingMem;
-		leavingCpu = pm.getFreeResource(ResourceType.CPU)
-				- vm.getDemand(ResourceType.CPU);
-		leavingMem = pm.getFreeResource(ResourceType.MEMORY)
-				- vm.getDemand(ResourceType.MEMORY);
-
-		return leavingCpu * leavingMem;
-	}
-
-	public class WorstFitTypeChooser implements PhysicalMachineTypeChooser {
-
-		public Server chooseServerType(List<Server> machineTypes,
-				VirtualMachine vmDemand) {
-			Server selectedMachine = null;
-			double leavingResource = 0.0;
-
-			Collections.sort(machineTypes);
-
-			for (Server server : machineTypes) {
-				if (server.canHost(vmDemand)) {
-					if (leavingResource(server, vmDemand) > leavingResource) {
-						selectedMachine = server;
-						leavingResource = leavingResource(server, vmDemand);
-					}
-				}
-			}
-
-			if (selectedMachine == null) {
-				logger.info("No inactive physical machine can satisfy the virtual machine's demand. Activating the physical machine with lowest loss of performance.");
-
-				Server lessLossOfPerformanceMachine = null;
-				double lessLossOfPerformance = Double.MAX_VALUE;
-
-				for (Server pm : machineTypes) {
-					if (!pm.canHost(vmDemand)) {
-						if (lossOfPerformance(pm, vmDemand) < lessLossOfPerformance) {
-							lessLossOfPerformance = lossOfPerformance(pm,
-									vmDemand);
-							lessLossOfPerformanceMachine = pm;
-						}
-					}
-				}
-
-				if (lessLossOfPerformanceMachine == null) {
-					logger.info("There is no inactive physical machine. Need to overload one.");
-					return null;
-				}
-
-				selectedMachine = lessLossOfPerformanceMachine;
-			}
-			return selectedMachine;
-		}
-
-		private double lossOfPerformance(Server pm, VirtualMachine vm) {
-			double leavingCpu, leavingMem;
-			double sum = 0;
-			leavingCpu = pm.getFreeResource(ResourceType.CPU)
-					- vm.getDemand(ResourceType.CPU);
-			leavingMem = pm.getFreeResource(ResourceType.MEMORY)
-					- vm.getDemand(ResourceType.MEMORY);
-
-			sum += (leavingCpu < 0) ? -leavingCpu : 0;
-			sum += (leavingMem < 0) ? -leavingMem : 0;
-
-			return sum;
-		}
 
 	}
 
@@ -182,40 +109,45 @@ public class WorstFitDecreasing implements PlacementWithPowerOffStrategy {
 	@Override
 	public void allocate(VirtualMachine vm, List<Server> servers)
 			throws Exception {
+		Server destinationServer = null;
+		double leavingResource = -1.0;
 
-		Server worstFitServer = null;
-		double worstFitLeavingResource = -1.0;
-
-		for (Server pm : virtualizationManager.getActiveServerList()) {
-			if (pm.canHost(vm)) {
+		for (Server server : servers) {
+			if (server.canHost(vm)) {
 				// stores the worst-fit allocation
-				if (leavingResource(pm, vm) > worstFitLeavingResource) {
-					worstFitServer = pm;
-					worstFitLeavingResource = leavingResource(pm, vm);
+				if (PlacementUtils.leavingResource(server, vm) > leavingResource) {
+					destinationServer = server;
+					leavingResource = PlacementUtils
+							.leavingResource(server, vm);
 				}
 
 			}
 		}
 
-		if (worstFitServer != null) {
-			virtualizationManager.setVmToServer(vm, worstFitServer);
-		} else {
-			Server inactivePm = virtualizationManager.getNextInactiveServer(vm,
-					new WorstFitTypeChooser());
-			if (inactivePm != null) {
-				try {
-					virtualizationManager.setVmToServer(vm, inactivePm);
-				} catch (ServerOverloadedException ex) {
-				}
+		if (destinationServer == null) {
+			Server inactiveServer = virtualizationManager
+					.getNextInactiveServer(vm, new WorstFitTypeChooser());
 
-				servers.add(inactivePm);
-			} else {
-				logger.info(
-						"No inactive physical machine provided. Could not consolidate VM {}.",
-						vm.toString());
-				vms_not_allocated++;
+			if (inactiveServer != null) {
+				destinationServer = inactiveServer;
+
+				servers.add(inactiveServer);
 			}
 		}
 
+		if (destinationServer == null) {
+			destinationServer = PlacementUtils.lessLossEmptyServer(servers, vm);
+		}
+
+		if (destinationServer == null) {
+			logger.info(
+					"No inactive physical machine provided. Could not consolidate VM {}.",
+					vm.toString());
+			vms_not_allocated++;
+		}
+
+		if (destinationServer != null) {
+			virtualizationManager.setVmToServer(vm, destinationServer);
+		}
 	}
 }

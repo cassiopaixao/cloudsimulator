@@ -5,7 +5,6 @@ import java.util.List;
 
 import br.usp.ime.cassiop.workloadsim.exceptions.ServerOverloadedException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
-import br.usp.ime.cassiop.workloadsim.util.MathUtils;
 
 /**
  * Represents a server machine with its resource capacities.
@@ -84,9 +83,10 @@ public class Server extends Machine {
 		updateResourceUtilization();
 	}
 
-	public void removeVirtualMachine(VirtualMachine vm) throws Exception {
+	public void removeVirtualMachine(VirtualMachine vm)
+			throws UnknownVirtualMachineException {
 		if (!virtualMachines.remove(vm)) {
-			throw new Exception(
+			throw new UnknownVirtualMachineException(
 					"Could not remove VM from server: VM was not allocated to this server.");
 		}
 
@@ -161,10 +161,11 @@ public class Server extends Machine {
 	 * resources' demands are lower or equal to resources' capacity.
 	 * 
 	 * @param vmDemand
+	 *            virtual machine you'd like to allocate to the server
 	 * @return
 	 */
 	public boolean canHost(VirtualMachine vmDemand) {
-		return canHost(vmDemand, true);
+		return canHost(vmDemand, false);
 	}
 
 	/**
@@ -172,19 +173,23 @@ public class Server extends Machine {
 	 * resources' demands are lower or equal to resources' capacity.
 	 * 
 	 * @param vmDemand
+	 *            virtual machine you'd like to allocate to the server
+	 * @param avoidBeingAlmostOverloaded
+	 *            if <code>true</code>, verifies if the server can host the
+	 *            vmDemand and doesn't become almost overloaded
 	 * @return
 	 */
 	public boolean canHost(VirtualMachine vmDemand,
-			boolean ignoreLossOfPerformance) {
-		if (ignoreLossOfPerformance) {
-			if (freeResourceCpu > vmDemand.resourceCpu
-					&& freeResourceMem > vmDemand.resourceMem) {
+			boolean avoidBeingAlmostOverloaded) {
+		if (avoidBeingAlmostOverloaded) {
+			if (freeResourceCpu + kneePerformanceLossCpuNrml - resourceCpu >= vmDemand.resourceCpu
+					&& freeResourceMem + kneePerformanceLossMemNrml
+							- resourceMem >= vmDemand.resourceMem) {
 				return true;
 			}
 		} else {
-			if (freeResourceCpu + kneePerformanceLossCpuNrml - resourceCpu > vmDemand.resourceCpu
-					&& freeResourceMem + kneePerformanceLossMemNrml
-							- resourceMem > vmDemand.resourceMem) {
+			if (freeResourceCpu >= vmDemand.resourceCpu
+					&& freeResourceMem >= vmDemand.resourceMem) {
 				return true;
 			}
 		}
@@ -227,11 +232,6 @@ public class Server extends Machine {
 	public void updateVm(VirtualMachine vmInDemand)
 			throws ServerOverloadedException, UnknownVirtualMachineException {
 		for (VirtualMachine vm : virtualMachines) {
-			if (vm == null || vm.getName() == null || vmInDemand == null
-					|| vmInDemand.getName() == null) {
-				System.out.println("tah nulo");
-			}
-
 			if (vm.getName().equals(vmInDemand.getName())) {
 				updateVm(vm, vmInDemand);
 				return;
@@ -246,38 +246,19 @@ public class Server extends Machine {
 				2) + Math.pow(resourceMem - freeResourceMem, 2));
 
 		if (freeResourceCpu < 0 || freeResourceMem < 0) {
-			residualCapacity = 0;
+			double nonNegativeFreeResourceCpu = freeResourceCpu < 0 ? 0
+					: freeResourceCpu;
+			double nonNegativeFreeResourceMem = freeResourceMem < 0 ? 0
+					: freeResourceMem;
+
+			residualCapacity = Math.sqrt(Math
+					.pow(nonNegativeFreeResourceCpu, 2)
+					+ Math.pow(nonNegativeFreeResourceMem, 2));
 		} else {
 			residualCapacity = Math.sqrt(Math.pow(freeResourceCpu, 2)
 					+ Math.pow(freeResourceMem, 2));
 		}
 
-	}
-
-	public void updateVmToMax(VirtualMachine vm, VirtualMachine actualVm)
-			throws ServerOverloadedException {
-		if (MathUtils.greaterThan(actualVm.getDemand(ResourceType.CPU),
-				vm.getDemand(ResourceType.CPU))) {
-			freeResourceCpu += vm.getDemand(ResourceType.CPU)
-					- actualVm.getDemand(ResourceType.CPU);
-			vm.setDemand(ResourceType.CPU, actualVm.getDemand(ResourceType.CPU));
-		}
-		if (MathUtils.greaterThan(actualVm.getDemand(ResourceType.MEMORY),
-				vm.getDemand(ResourceType.MEMORY))) {
-			freeResourceMem += vm.getDemand(ResourceType.MEMORY)
-					- actualVm.getDemand(ResourceType.MEMORY);
-			vm.setDemand(ResourceType.MEMORY,
-					actualVm.getDemand(ResourceType.MEMORY));
-		}
-		if (actualVm.getEndTime() > vm.getEndTime()) {
-			vm.setEndTime(actualVm.getEndTime());
-		}
-
-		updateResourceUtilization();
-
-		if (freeResourceCpu < 0 || freeResourceMem < 0) {
-			throw new ServerOverloadedException();
-		}
 	}
 
 	public boolean isOverloaded() {
