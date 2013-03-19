@@ -15,7 +15,7 @@ public abstract class Workload {
 		this.timeInterval = timeInterval;
 		this.lastTime = lastTime;
 	}
-	
+
 	public abstract List<VirtualMachine> getDemand(long time);
 
 	public long getTimeInterval() {
@@ -30,6 +30,8 @@ public abstract class Workload {
 		return lastTime;
 	}
 
-	public abstract boolean hasDemand(long currentTime);
-
+	public boolean hasDemand(long currentTime) {
+		return (currentTime >= initialTime && currentTime <= lastTime && currentTime
+				% timeInterval == 0);
+	}
 }

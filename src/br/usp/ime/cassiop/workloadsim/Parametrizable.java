@@ -2,6 +2,8 @@ package br.usp.ime.cassiop.workloadsim;
 
 import java.util.Map;
 
+import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
+
 public interface Parametrizable {
 
 	/**
@@ -11,5 +13,5 @@ public interface Parametrizable {
 	 * @throws Exception
 	 *             if at least one of the parameters is invalid.
 	 */
-	public void setParameters(Map<String, Object> parameters) throws Exception;
+	public void setParameters(Map<String, Object> parameters) throws InvalidParameterException;
 }

@@ -5,9 +5,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import br.usp.ime.cassiop.workloadsim.MigrationController;
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
+import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
+import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
+import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
@@ -16,6 +22,8 @@ public class NoMigrationControl implements MigrationController {
 	private VirtualizationManager virtualizationManager = null;
 
 	private StatisticsModule statisticsModule = null;
+
+	final Logger logger = LoggerFactory.getLogger(NoMigrationControl.class);
 
 	public void setVirtualizationManager(
 			VirtualizationManager virtualizationManager) {
@@ -54,9 +62,14 @@ public class NoMigrationControl implements MigrationController {
 		for (VirtualMachine vm : shouldDeallocate) {
 			try {
 				virtualizationManager.deallocate(vm);
-			} catch (Exception e) {
-				
-				e.printStackTrace();
+			} catch (UnknownVirtualMachineException e) {
+				logger.error(
+						"UnknownVirtualMachineException thrown while trying to deallocate VMs. VM: {}",
+						vm);
+			} catch (UnknownServerException e) {
+				logger.error(
+						"UnknownServerException thrown while trying to deallocate VMs. VM: {} ; Server: {}",
+						vm, vm.getCurrentServer());
 			}
 		}
 
@@ -72,21 +85,24 @@ public class NoMigrationControl implements MigrationController {
 	}
 
 	@Override
-	public void setParameters(Map<String, Object> parameters) throws Exception {
+	public void setParameters(Map<String, Object> parameters)
+			throws InvalidParameterException {
 		Object o = parameters.get(Constants.PARAMETER_VIRTUALIZATION_MANAGER);
 		if (o instanceof VirtualizationManager) {
 			setVirtualizationManager((VirtualizationManager) o);
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_VIRTUALIZATION_MANAGER));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_VIRTUALIZATION_MANAGER,
+					VirtualizationManager.class);
 		}
 
 		o = parameters.get(Constants.PARAMETER_STATISTICS_MODULE);
 		if (o instanceof StatisticsModule) {
 			setStatisticsModule((StatisticsModule) o);
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_STATISTICS_MODULE));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_STATISTICS_MODULE,
+					StatisticsModule.class);
 		}
 	}
 

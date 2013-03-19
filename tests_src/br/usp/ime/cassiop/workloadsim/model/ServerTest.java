@@ -1,11 +1,6 @@
 package br.usp.ime.cassiop.workloadsim.model;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.util.Locale;
 
@@ -23,7 +18,7 @@ public class ServerTest {
 		Locale.setDefault(Locale.US);
 	}
 
-	private Server buildServer() {
+	private Server buildCanonicalServer() {
 		return buildServer(1.0, 1.0);
 	}
 
@@ -45,7 +40,7 @@ public class ServerTest {
 
 	@Test
 	public void testGetResourceUtilization() {
-		Server server = buildServer();
+		Server server = buildCanonicalServer();
 		assertEquals(0.0, server.getResourceUtilization(), MathUtils.EPSILON);
 
 		VirtualMachine vm1 = buildVM(0.5, 0.5);
@@ -57,8 +52,6 @@ public class ServerTest {
 
 		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			fail(e.getMessage());
 		}
 
 		try {
@@ -67,15 +60,13 @@ public class ServerTest {
 
 		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			fail(e.getMessage());
 		}
 
 		try {
 			server.removeVirtualMachine(vm2);
 			assertEquals(0.7071, server.getResourceUtilization(), 0.0001);
 
-		} catch (Exception e) {
+		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
 		}
 
@@ -93,115 +84,126 @@ public class ServerTest {
 	}
 
 	@Test
-	public void testGetResidualCapacity() {
-		Server server = buildServer();
+	public void testGetResidualCapacityEmptyServer() {
+		Server server = buildCanonicalServer();
 
 		assertEquals(1.4142, server.getResidualCapacity(), 0.0001);
+	}
+
+	@Test
+	public void testGetResidualCapacity() {
+		Server server = buildCanonicalServer();
 
 		VirtualMachine vm1 = buildVM(0.5, 0.5);
-		VirtualMachine vm2 = buildVM(0.25, 0.5);
-		VirtualMachine vm3 = buildVM(0.0, 0.25);
-		VirtualMachine vm4 = buildVM(0.5, 0.25);
 
 		try {
 			server.addVirtualMachine(vm1);
 		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			fail("Server shouldn't be overloaded.");
 		}
+	}
 
-		// freecpu: 0.5, freemem: 0.5
-		assertEquals(0.7071, server.getResidualCapacity(), 0.0001);
+	@Test
+	public void testGetResidualCapacityOverloadedServer1() {
+		Server server = buildCanonicalServer();
+
+		VirtualMachine vm1 = buildVM(1.25, 0.75);
 
 		try {
-			server.addVirtualMachine(vm2);
+			server.addVirtualMachine(vm1);
 		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			fail("Server shouldn't be overloaded.");
 		}
 
-		// freecpu: 0.25, freemem: 0.0
+		// freecpu: -0.25, freemem: 0.25
 		assertEquals(0.25, server.getResidualCapacity(), 0.001);
 
-		try {
-			server.addVirtualMachine(vm3);
-		} catch (UnknownVirtualMachineException e) {
-			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			// ok, server is expected to be overloaded.
-		}
+	}
 
-		// freecpu: 0.25, freemem: -0.25
-		assertEquals(0.25, server.getResidualCapacity(), 0.0001);
+	@Test
+	public void testGetResidualCapacityOverloadedServer2() {
+		Server server = buildCanonicalServer();
+
+		VirtualMachine vm1 = buildVM(1.25, 1.25);
 
 		try {
-			server.addVirtualMachine(vm4);
+			server.addVirtualMachine(vm1);
 		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			// ok, server is expected to be overloaded.
 		}
 
-		// freecpu: -0.25, freemem: -0.5
-		assertEquals(0.0, server.getResidualCapacity(), MathUtils.EPSILON);
+		// freecpu: -0.25, freemem: -0.25
+		assertEquals(0.0, server.getResidualCapacity(), 0.001);
+
 	}
 
 	@Test
 	public void testGetLoadPercentage() {
-		Server server = buildServer();
+		Server server = buildCanonicalServer();
 
 		assertEquals(0.0, server.getLoadPercentage(), 0.0001);
 
 		VirtualMachine vm1 = buildVM(0.5, 0.5);
-		VirtualMachine vm2 = buildVM(0.25, 0.5);
-		VirtualMachine vm3 = buildVM(0.0, 0.25);
-		VirtualMachine vm4 = buildVM(0.5, 0.25);
 
 		try {
 			server.addVirtualMachine(vm1);
 		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			fail("Server shouldn't be overloaded.");
 		}
 
 		// cpu: 0.5, mem: 0.5
 		assertEquals(0.25, server.getLoadPercentage(), 0.0001);
+	}
+
+	@Test
+	public void testGetLoadPercentageWithTwoVirtualMachines() {
+		Server server = buildCanonicalServer();
+
+		VirtualMachine vm1 = buildVM(0.5, 0.25);
+		VirtualMachine vm2 = buildVM(0.25, 0.25);
 
 		try {
+			server.addVirtualMachine(vm1);
 			server.addVirtualMachine(vm2);
 		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			fail("Server shouldn't be overloaded.");
 		}
 
-		// cpu: 0.75, mem: 1.0
-		assertEquals(0.75, server.getLoadPercentage(), 0.001);
+		// cpu: 0.75, mem: 0.5
+		assertEquals(0.375, server.getLoadPercentage(), 0.0001);
+	}
+
+	@Test
+	public void testGetLoadPercentageOfAnOverloadedServer1() {
+		Server server = buildCanonicalServer();
+
+		VirtualMachine vm1 = buildVM(0.25, 1.25);
 
 		try {
-			server.addVirtualMachine(vm3);
+			server.addVirtualMachine(vm1);
 		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			// ok, server is expected to be overloaded.
 		}
 
-		// cpu: 0.75, mem: 1.25
-		assertEquals(0.9375, server.getLoadPercentage(), 0.0001);
+		// cpu: 0.25, mem: 1.25
+		assertEquals(0.3125, server.getLoadPercentage(), 0.0001);
+	}
+
+	@Test
+	public void testGetLoadPercentageOfAnOverloadedServer2() {
+		Server server = buildCanonicalServer();
+
+		VirtualMachine vm1 = buildVM(1.25, 1.5);
 
 		try {
-			server.addVirtualMachine(vm4);
+			server.addVirtualMachine(vm1);
 		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			// ok, server is expected to be overloaded.
 		}
 
 		// cpu: 1.25, mem: 1.5
 		assertEquals(1.875, server.getLoadPercentage(), 0.0001);
+
 	}
 
 	@Test
@@ -224,7 +226,7 @@ public class ServerTest {
 
 	@Test
 	public void testGetVirtualMachines() {
-		Server server = buildServer();
+		Server server = buildCanonicalServer();
 		VirtualMachine vm1 = buildVM(0.5, 0.5);
 		VirtualMachine vm2 = buildVM(0.25, 0.25);
 
@@ -253,64 +255,77 @@ public class ServerTest {
 
 	@Test
 	public void testAddVirtualMachine() {
-		Server server = buildServer();
+		Server server = buildCanonicalServer();
 		VirtualMachine vm1 = buildVM(0.5, 0.5);
 		VirtualMachine vm2 = buildVM(0.75, 0.5);
 
 		assertFalse(server.getVirtualMachines().contains(vm1));
 		assertFalse(server.getVirtualMachines().contains(vm2));
-		assertEquals(server.getVirtualMachines().size(), 0);
 
 		try {
 			server.addVirtualMachine(vm1);
 		} catch (UnknownVirtualMachineException e) {
 			fail("Virtual machine shouldn't be null.");
-		} catch (ServerOverloadedException e) {
-			fail("Server shouldn't be overloaded.");
 		}
 
 		assertTrue(server.getVirtualMachines().contains(vm1));
 		assertFalse(server.getVirtualMachines().contains(vm2));
-		assertEquals(server.getVirtualMachines().size(), 1);
 
 		try {
 			server.addVirtualMachine(vm2);
-			fail("ServerOverloadedExecption was not thrown.");
 		} catch (UnknownVirtualMachineException e) {
 			fail("Virtual machine shouldn't be null.");
-		} catch (ServerOverloadedException e) {
-			assertNotNull(e);
 		}
 
 		assertTrue(server.getVirtualMachines().contains(vm1));
 		assertTrue(server.getVirtualMachines().contains(vm2));
-		assertEquals(server.getVirtualMachines().size(), 2);
+
+	}
+
+	@Test(expected = UnknownVirtualMachineException.class)
+	public void testAddNullVirtualMachine()
+			throws UnknownVirtualMachineException {
+		Server server = buildCanonicalServer();
+
+		server.addVirtualMachine(null);
+	}
+
+	@Test
+	public void testAddVirtualMachineAlreadyAllocated() {
+		Server server = buildCanonicalServer();
+		VirtualMachine vm1 = buildVM(0.5, 0.5);
 
 		try {
-			server.addVirtualMachine(null);
-			fail("UnknownVirtualMachineExecption was not thrown.");
+			server.addVirtualMachine(vm1);
 		} catch (UnknownVirtualMachineException e) {
-			assertNotNull("UnknownVirtualMachineException should be thrown.", e);
-		} catch (ServerOverloadedException e) {
-			fail("Shouldn't throw ServerOverloadException.");
+			fail("Virtual machine shouldn't be null.");
 		}
 
 		assertTrue(server.getVirtualMachines().contains(vm1));
-		assertTrue(server.getVirtualMachines().contains(vm2));
-		assertEquals(server.getVirtualMachines().size(), 2);
+		assertEquals(0.5, server.getFreeResource(ResourceType.CPU), 0.0001);
+		assertEquals(0.5, server.getFreeResource(ResourceType.MEMORY), 0.0001);
 
+		try {
+			server.addVirtualMachine(vm1);
+		} catch (UnknownVirtualMachineException e) {
+			fail("Virtual machine shouldn't be null.");
+		}
+
+		assertTrue(server.getVirtualMachines().contains(vm1));
+		assertEquals(0.5, server.getFreeResource(ResourceType.CPU), 0.0001);
+		assertEquals(0.5, server.getFreeResource(ResourceType.MEMORY), 0.0001);
 	}
 
 	@Test
 	public void testClear() {
-		Server server = buildServer();
+		Server server = buildCanonicalServer();
 		VirtualMachine vm1 = buildVM(0.5, 0.5);
 		VirtualMachine vm2 = buildVM(0.25, 0.25);
 
 		try {
 			server.addVirtualMachine(vm1);
 			server.addVirtualMachine(vm2);
-		} catch (Exception e) {
+		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
 		}
 
@@ -320,37 +335,28 @@ public class ServerTest {
 		server.clear();
 
 		assertTrue(server.getVirtualMachines().isEmpty());
-		assertEquals(0.0, server.getResourceUtilization(), MathUtils.EPSILON);
+		assertEquals(0.0, server.getResourceUtilization(), 0.0001);
 		assertEquals(1.4142, server.getResidualCapacity(), 0.0001);
-		assertTrue(MathUtils.equals(server.getFreeResource(ResourceType.CPU),
-				server.getCapacity(ResourceType.CPU)));
-		assertTrue(MathUtils.equals(
-				server.getFreeResource(ResourceType.MEMORY),
-				server.getCapacity(ResourceType.MEMORY)));
+		assertEquals(1.0, server.getFreeResource(ResourceType.CPU), 0.0001);
+		assertEquals(1.0, server.getFreeResource(ResourceType.MEMORY), 0.0001);
 	}
 
 	@Test
 	public void testRemoveVirtualMachine() {
-		Server server = buildServer();
+		Server server = buildCanonicalServer();
 		VirtualMachine vm1 = buildVM(0.5, 0.5);
 		VirtualMachine vm2 = buildVM(0.25, 0.25);
 
 		try {
 			server.addVirtualMachine(vm1);
 			server.addVirtualMachine(vm2);
-		} catch (Exception e) {
+		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
 		}
-
-		assertTrue(server.getVirtualMachines().contains(vm1));
-		assertTrue(server.getVirtualMachines().contains(vm2));
-
-		assertNotNull(vm1.getCurrentServer());
-		assertNotNull(vm2.getCurrentServer());
 
 		try {
 			server.removeVirtualMachine(vm1);
-		} catch (Exception e) {
+		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
 		}
 
@@ -361,84 +367,71 @@ public class ServerTest {
 		assertNotNull(vm2.getCurrentServer());
 
 		assertNotNull(vm1.getLastServer());
+	}
 
-		try {
-			server.removeVirtualMachine(vm2);
-		} catch (Exception e) {
-			fail(e.getMessage());
-		}
+	@Test(expected = UnknownVirtualMachineException.class)
+	public void testRemoveNotAllocatedVirtualMachine()
+			throws UnknownVirtualMachineException {
+		Server server = buildCanonicalServer();
+		VirtualMachine vm1 = buildVM(0.5, 0.5);
 
-		assertFalse(server.getVirtualMachines().contains(vm1));
-		assertFalse(server.getVirtualMachines().contains(vm2));
+		server.removeVirtualMachine(vm1);
+	}
 
-		assertNull(vm1.getCurrentServer());
-		assertNull(vm2.getCurrentServer());
+	@Test(expected = UnknownVirtualMachineException.class)
+	public void testRemoveNullVirtualMachine()
+			throws UnknownVirtualMachineException {
+		Server server = buildCanonicalServer();
 
-		assertNotNull(vm1.getLastServer());
-		assertNotNull(vm2.getLastServer());
+		server.removeVirtualMachine(null);
 	}
 
 	@Test
-	public void testSetCapacity() {
+	public void testSetCapacity1() {
 		Server server = new Server();
 		VirtualMachine vm1 = buildVM(0.5, 0.5);
 
 		server.setCapacity(ResourceType.CPU, 1.0);
 		server.setCapacity(ResourceType.MEMORY, 1.0);
 
-		assertEquals(1.0, server.getCapacity(ResourceType.CPU),
-				MathUtils.EPSILON);
-		assertEquals(1.0, server.getCapacity(ResourceType.MEMORY),
-				MathUtils.EPSILON);
+		assertEquals(1.0, server.getCapacity(ResourceType.CPU), 0.0001);
+		assertEquals(1.0, server.getCapacity(ResourceType.MEMORY), 0.0001);
 
 		try {
 			server.addVirtualMachine(vm1);
-		} catch (Exception e) {
+		} catch (UnknownVirtualMachineException e) {
+			fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testSetCapacity2() {
+		Server server = new Server();
+		VirtualMachine vm1 = buildVM(0.5, 0.5);
+
+		server.setCapacity(ResourceType.CPU, 0.25);
+		server.setCapacity(ResourceType.MEMORY, 1.00);
+
+		assertEquals(0.25, server.getCapacity(ResourceType.CPU), 0.0001);
+		assertEquals(1.00, server.getCapacity(ResourceType.MEMORY), 0.0001);
+
+		try {
+			server.addVirtualMachine(vm1);
+		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
 		}
 
-		assertEquals(0.5, server.getFreeResource(ResourceType.CPU), 0.0001);
+		assertEquals(-0.25, server.getFreeResource(ResourceType.CPU), 0.0001);
 		assertEquals(0.5, server.getFreeResource(ResourceType.MEMORY), 0.0001);
 
-		assertEquals(0.25, server.getLoadPercentage(), 0.0001);
-		assertEquals(0.7071, server.getResidualCapacity(), 0.0001);
-		assertEquals(0.7071, server.getResourceUtilization(), 0.0001);
-
-		server.setCapacity(ResourceType.CPU, 0.5);
-		server.setCapacity(ResourceType.MEMORY, 0.5);
-
-		assertEquals(0.5, server.getCapacity(ResourceType.CPU),
-				MathUtils.EPSILON);
-		assertEquals(0.5, server.getCapacity(ResourceType.MEMORY),
-				MathUtils.EPSILON);
-
-		assertEquals(0.0, server.getFreeResource(ResourceType.CPU), 0.0001);
-		assertEquals(0.0, server.getFreeResource(ResourceType.MEMORY), 0.0001);
-
 		assertEquals(1.0, server.getLoadPercentage(), 0.0001);
-		assertEquals(0.0, server.getResidualCapacity(), 0.0001);
+		assertEquals(0.5, server.getResidualCapacity(), 0.0001);
 		assertEquals(0.7071, server.getResourceUtilization(), 0.0001);
-
-		server.setCapacity(ResourceType.CPU, 0.25);
-		server.setCapacity(ResourceType.MEMORY, 0.25);
-
-		assertEquals(0.25, server.getCapacity(ResourceType.CPU),
-				MathUtils.EPSILON);
-		assertEquals(0.25, server.getCapacity(ResourceType.MEMORY),
-				MathUtils.EPSILON);
-
-		assertEquals(-0.25, server.getFreeResource(ResourceType.CPU), 0.0001);
-		assertEquals(-0.25, server.getFreeResource(ResourceType.MEMORY), 0.0001);
-
-		assertEquals(4.0, server.getLoadPercentage(), 0.0001);
-		assertEquals(0.0, server.getResidualCapacity(), 0.0001);
-		assertEquals(0.7071, server.getResourceUtilization(), 0.0001);
-
 	}
 
 	@Test
 	public void testSetKneePerformanceLoss() {
-		Server server = buildServer();
+		Server server = buildCanonicalServer();
 		VirtualMachine vm1 = buildVM(0.75, 0.5);
 
 		try {
@@ -457,7 +450,7 @@ public class ServerTest {
 
 	@Test
 	public void testCanHostVirtualMachine() {
-		Server server = buildServer();
+		Server server = buildCanonicalServer();
 		VirtualMachine vm1 = buildVM(0.5, 0.5);
 		VirtualMachine vm2 = buildVM(0.25, 0.25);
 		VirtualMachine vm3 = buildVM(0.5, 0.5);
@@ -481,9 +474,9 @@ public class ServerTest {
 
 	@Test
 	public void testCanHostVirtualMachineBoolean() {
-		Server server = buildServer();
+		Server server = buildCanonicalServer();
 		VirtualMachine vm1 = buildVM(0.5, 0.5);
-		VirtualMachine vm2 = buildVM(0.25, 0.25);
+		VirtualMachine vm2 = buildVM(0.5, 0.75);
 		VirtualMachine vm3 = buildVM(0.75, 0.75);
 
 		assertTrue(server.canHost(vm1, true));
@@ -496,10 +489,10 @@ public class ServerTest {
 		assertTrue(server.canHost(vm2, true));
 		assertFalse(server.canHost(vm3, true));
 
-		server.setKneePerformanceLoss(ResourceType.CPU, 0.6);
+		server.setKneePerformanceLoss(ResourceType.MEMORY, 0.6);
 
 		assertTrue(server.canHost(vm1, true));
-		assertTrue(server.canHost(vm2, true));
+		assertFalse(server.canHost(vm2, true));
 		assertFalse(server.canHost(vm3, true));
 	}
 
@@ -517,27 +510,26 @@ public class ServerTest {
 
 	@Test
 	public void testUpdateVm() {
-		Server server = buildServer();
+		Server server = buildCanonicalServer();
 		VirtualMachine vm1 = buildVM(0.5, 0.5);
 		VirtualMachine vm2 = buildVM(0.25, 0.25);
-		VirtualMachine vm3 = buildVM(1.5, 1.5);
-		VirtualMachine vm4 = buildVM(0.5, 0.5);
 
 		vm1.setName("testVm");
 		vm2.setName("testVm");
-		vm3.setName("testVm");
-		vm4.setName("testVmException");
-		
+
 		try {
 			server.addVirtualMachine(vm1);
-		} catch (Exception e) {
+		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
 		}
 
 		assertTrue(server.getVirtualMachines().contains(vm1));
-		assertEquals(0.5, vm1.getDemand(ResourceType.CPU), MathUtils.EPSILON);
-		assertEquals(0.5, vm1.getDemand(ResourceType.MEMORY), MathUtils.EPSILON);
-		
+		assertEquals(0.5, vm1.getDemand(ResourceType.CPU), 0.0001);
+		assertEquals(0.5, vm1.getDemand(ResourceType.MEMORY), 0.0001);
+
+		assertEquals(0.5, server.getFreeResource(ResourceType.CPU), 0.0001);
+		assertEquals(0.5, server.getFreeResource(ResourceType.MEMORY), 0.0001);
+
 		try {
 			server.updateVm(vm2);
 		} catch (ServerOverloadedException e) {
@@ -545,38 +537,83 @@ public class ServerTest {
 		} catch (UnknownVirtualMachineException e) {
 			fail("Both virtual machines has the same name. Shouldn't throw UnknownVirtualMachineException.");
 		}
-		
+
 		assertTrue(server.getVirtualMachines().contains(vm1));
-		assertEquals(0.25, vm1.getDemand(ResourceType.CPU), MathUtils.EPSILON);
-		assertEquals(0.25, vm1.getDemand(ResourceType.MEMORY), MathUtils.EPSILON);
-		
+		assertEquals(0.25, vm1.getDemand(ResourceType.CPU), 0.0001);
+		assertEquals(0.25, vm1.getDemand(ResourceType.MEMORY), 0.0001);
+
+		assertEquals(0.75, server.getFreeResource(ResourceType.CPU), 0.0001);
+		assertEquals(0.75, server.getFreeResource(ResourceType.MEMORY), 0.0001);
+	}
+
+	@Test(expected = ServerOverloadedException.class)
+	public void testUpdateVmToOverload() throws ServerOverloadedException {
+		Server server = buildCanonicalServer();
+		VirtualMachine vm1 = buildVM(0.5, 0.5);
+		VirtualMachine vm2 = buildVM(1.25, 0.75);
+
+		vm1.setName("testVm");
+		vm2.setName("testVm");
+
 		try {
-			server.updateVm(vm3);
-			fail("VM's new values are big enough. Should throw UnknownVirtualMachineException.");			
-		} catch (ServerOverloadedException e) {
-			assertNotNull("VM's new values are big enough. Should throw ServerOverloadedException.", e);
+			server.addVirtualMachine(vm1);
+		} catch (UnknownVirtualMachineException e) {
+			fail(e.getMessage());
+		}
+
+		try {
+			server.updateVm(vm2);
 		} catch (UnknownVirtualMachineException e) {
 			fail("Both virtual machines has the same name. Shouldn't throw UnknownVirtualMachineException.");
 		}
+	}
 
-		assertTrue(server.getVirtualMachines().contains(vm1));
-		assertEquals(1.5, vm1.getDemand(ResourceType.CPU), MathUtils.EPSILON);
-		assertEquals(1.5, vm1.getDemand(ResourceType.MEMORY), MathUtils.EPSILON);
-		
+	@Test(expected = UnknownVirtualMachineException.class)
+	public void testUpdateVmToANullOne() throws UnknownVirtualMachineException {
+		Server server = buildCanonicalServer();
+		VirtualMachine vm1 = buildVM(0.5, 0.5);
+
+		vm1.setName("testVm");
+
 		try {
-			server.updateVm(vm4);
-			fail("vm4 doesn't have same name. Should throw UnknownVirtualMachineException.");			
-		} catch (ServerOverloadedException e) {
-			fail("VM's new values aren't big enough. Shouldn't throw ServerOverloadedException.");
+			server.addVirtualMachine(vm1);
 		} catch (UnknownVirtualMachineException e) {
-			assertNotNull("vm4 doesn't have same name. Should throw UnknownVirtualMachineException.", e);
+			fail(e.getMessage());
 		}
 
+		try {
+			server.updateVm(null);
+		} catch (ServerOverloadedException e) {
+			fail("VM's new values aren't big enough. Shouldn't throw ServerOverloadedException.");
+		}
+	}
+
+	@Test(expected = UnknownVirtualMachineException.class)
+	public void testUpdateVmWithDifferentName()
+			throws UnknownVirtualMachineException {
+		Server server = buildCanonicalServer();
+		VirtualMachine vm1 = buildVM(0.5, 0.5);
+		VirtualMachine vm2 = buildVM(0.25, 0.25);
+
+		vm1.setName("testVm");
+		vm2.setName("testVmException");
+
+		try {
+			server.addVirtualMachine(vm1);
+		} catch (UnknownVirtualMachineException e) {
+			fail(e.getMessage());
+		}
+
+		try {
+			server.updateVm(vm2);
+		} catch (ServerOverloadedException e) {
+			fail("VM's new values aren't big enough. Shouldn't throw ServerOverloadedException.");
+		}
 	}
 
 	@Test
 	public void testIsOverloaded() {
-		Server server = buildServer();
+		Server server = buildCanonicalServer();
 		VirtualMachine vm1 = buildVM(0.5, 0.5);
 		VirtualMachine vm2 = buildVM(0.25, 0.25);
 		VirtualMachine vm3 = buildVM(0.5, 0.5);
@@ -586,8 +623,6 @@ public class ServerTest {
 			server.addVirtualMachine(vm2);
 		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			fail("Server shouldn't be overloaded.");
 		}
 
 		assertFalse(server.isOverloaded());
@@ -596,8 +631,6 @@ public class ServerTest {
 			server.addVirtualMachine(vm3);
 		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			assertTrue("Server should be overloaded.", server.isOverloaded());
 		}
 
 		assertTrue(server.isOverloaded());
@@ -612,11 +645,9 @@ public class ServerTest {
 	}
 
 	@Test
-	public void testIsAlmostOverloaded() {
-		Server server = buildServer();
-		VirtualMachine vm1 = buildVM(0.5, 0.25);
-		VirtualMachine vm2 = buildVM(0.25, 0.1);
-		VirtualMachine vm3 = buildVM(0.25, 0.65);
+	public void testIsAlmostOverloadedByCpu() {
+		Server server = buildCanonicalServer();
+		VirtualMachine vm1 = buildVM(0.75, 0.1);
 
 		server.setKneePerformanceLoss(ResourceType.CPU, 0.7);
 		server.setKneePerformanceLoss(ResourceType.MEMORY, 0.7);
@@ -625,65 +656,42 @@ public class ServerTest {
 			server.addVirtualMachine(vm1);
 		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			fail("Server shouldn't be overloaded.");
-		}
-		// cpu: 0.5, mem: 0.5
-		assertFalse(server.isAlmostOverloaded());
-
-		try {
-			server.addVirtualMachine(vm2);
-		} catch (UnknownVirtualMachineException e) {
-			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			fail("Server shouldn't be overloaded.");
 		}
 
-		// cpu: 0.75, mem: 0.6
-		// almost overloaded by cpu
 		assertTrue(server.isAlmostOverloaded());
+	}
 
-		try {
-			server.removeVirtualMachine(vm1);
-		} catch (UnknownVirtualMachineException e) {
-			fail("The virtual machine should be allocated to the server.");
-		}
+	@Test
+	public void testIsAlmostOverloadedByMemory() {
+		Server server = buildCanonicalServer();
+		VirtualMachine vm1 = buildVM(0.1, 0.75);
 
-		// cpu: 0.25, mem: 0.1
-		assertFalse(server.isAlmostOverloaded());
-
-		try {
-			server.addVirtualMachine(vm3);
-		} catch (UnknownVirtualMachineException e) {
-			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			fail("Server shouldn't be overloaded.");
-		}
-
-		// cpu: 0.5, mem: 0.75
-		// almost overloaded by mem
-		assertTrue(server.isAlmostOverloaded());
-
-		try {
-			server.removeVirtualMachine(vm2);
-		} catch (UnknownVirtualMachineException e) {
-			fail("The virtual machine should be allocated to the server.");
-		}
-
-		// cpu: 0.25, mem: 0.65
-		assertFalse(server.isAlmostOverloaded());
+		server.setKneePerformanceLoss(ResourceType.CPU, 0.7);
+		server.setKneePerformanceLoss(ResourceType.MEMORY, 0.7);
 
 		try {
 			server.addVirtualMachine(vm1);
 		} catch (UnknownVirtualMachineException e) {
 			fail(e.getMessage());
-		} catch (ServerOverloadedException e) {
-			fail("Server shouldn't be overloaded.");
 		}
 
-		// cpu: 0.75, mem: 0.90
-		// almost overloaded by cpu and mem
 		assertTrue(server.isAlmostOverloaded());
 	}
 
+	@Test
+	public void testIsNotAlmostOverloaded() {
+		Server server = buildCanonicalServer();
+		VirtualMachine vm1 = buildVM(0.5, 0.25);
+
+		server.setKneePerformanceLoss(ResourceType.CPU, 0.7);
+		server.setKneePerformanceLoss(ResourceType.MEMORY, 0.7);
+
+		try {
+			server.addVirtualMachine(vm1);
+		} catch (UnknownVirtualMachineException e) {
+			fail(e.getMessage());
+		}
+
+		assertFalse(server.isAlmostOverloaded());
+	}
 }

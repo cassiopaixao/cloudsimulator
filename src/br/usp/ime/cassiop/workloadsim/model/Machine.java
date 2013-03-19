@@ -5,7 +5,7 @@ package br.usp.ime.cassiop.workloadsim.model;
  * @author cassio
  * 
  */
-abstract class Machine implements Comparable<Machine> {
+public abstract class Machine implements Comparable<Machine> {
 
 	protected String name = null;
 

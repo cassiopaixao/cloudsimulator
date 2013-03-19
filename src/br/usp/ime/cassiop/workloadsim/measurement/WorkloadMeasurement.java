@@ -7,6 +7,7 @@ import java.util.Map;
 import br.usp.ime.cassiop.workloadsim.Measurement;
 import br.usp.ime.cassiop.workloadsim.MeasurementModule;
 import br.usp.ime.cassiop.workloadsim.Workload;
+import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
@@ -45,15 +46,16 @@ public class WorkloadMeasurement implements MeasurementModule {
 	public Workload getWorkload() {
 		return workload;
 	}
-	
+
 	@Override
-	public void setParameters(Map<String, Object> parameters) throws Exception {
+	public void setParameters(Map<String, Object> parameters)
+			throws InvalidParameterException {
 		Object o = parameters.get(Constants.PARAMETER_WORKLOAD);
 		if (o instanceof Workload) {
 			setWorkload((Workload) o);
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_WORKLOAD));
+			throw new InvalidParameterException(Constants.PARAMETER_WORKLOAD,
+					Workload.class);
 		}
 	}
 }

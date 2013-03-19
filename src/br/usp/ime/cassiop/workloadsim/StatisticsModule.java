@@ -5,6 +5,7 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
+import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
 public abstract class StatisticsModule implements Parametrizable {
@@ -95,39 +96,43 @@ public abstract class StatisticsModule implements Parametrizable {
 	}
 
 	@Override
-	public void setParameters(Map<String, Object> parameters) throws Exception {
+	public void setParameters(Map<String, Object> parameters)
+			throws InvalidParameterException {
 		Object o = null;
-		
+
 		o = parameters.get(Constants.PARAMETER_VIRTUALIZATION_MANAGER);
 		if (o instanceof VirtualizationManager) {
 			setVirtualizationManager((VirtualizationManager) o);
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_VIRTUALIZATION_MANAGER));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_VIRTUALIZATION_MANAGER,
+					VirtualizationManager.class);
 		}
 
 		o = parameters.get(Constants.PARAMETER_FORECASTING_MODULE);
 		if (o instanceof ForecastingModule) {
 			setForecastingModule((ForecastingModule) o);
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_FORECASTING_MODULE));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_FORECASTING_MODULE,
+					ForecastingModule.class);
 		}
 
 		o = parameters.get(Constants.PARAMETER_MEASUREMENT_MODULE);
 		if (o instanceof MeasurementModule) {
 			setMeasurementModule((MeasurementModule) o);
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_MEASUREMENT_MODULE));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_MEASUREMENT_MODULE,
+					MeasurementModule.class);
 		}
 
 		o = parameters.get(Constants.PARAMETER_STATISTICS_FILE);
 		if (o instanceof File) {
 			setStatisticsFile((File) o);
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_STATISTICS_FILE));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_STATISTICS_FILE, File.class);
 		}
 	}
 

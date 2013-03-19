@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
+import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
@@ -39,7 +40,8 @@ public class MeasurementsMeanForecasting extends WorkloadForecasting {
 	}
 
 	@Override
-	public void setParameters(Map<String, Object> parameters) throws Exception {
+	public void setParameters(Map<String, Object> parameters)
+			throws InvalidParameterException {
 		super.setParameters(parameters);
 
 		Object o = null;
@@ -48,16 +50,18 @@ public class MeasurementsMeanForecasting extends WorkloadForecasting {
 		if (o instanceof VirtualizationManager) {
 			setVirtualizationManager((VirtualizationManager) o);
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_VIRTUALIZATION_MANAGER));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_VIRTUALIZATION_MANAGER,
+					VirtualizationManager.class);
 		}
 
 		o = parameters.get(Constants.PARAMETER_FORECASTING_MEASUREMENT_WINDOW);
 		if (o instanceof Integer) {
 			setMeasurementWindow(((Integer) o).intValue());
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_FORECASTING_MEASUREMENT_WINDOW));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_FORECASTING_MEASUREMENT_WINDOW,
+					Integer.class);
 		}
 	}
 

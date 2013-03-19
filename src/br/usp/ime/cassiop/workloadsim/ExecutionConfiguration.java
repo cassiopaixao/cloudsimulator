@@ -19,7 +19,7 @@ public class ExecutionConfiguration extends Thread {
 	static final Logger logger = LoggerFactory
 			.getLogger(ExecutionConfiguration.class);
 
-	private VirtualizationManager virtualizationManager = null;
+	private VirtualizationManagerImpl virtualizationManager = null;
 	private PlacementModule placementModule = null;
 	private ForecastingModule forecastingModule = null;
 	private MeasurementModule measurementModule = null;
@@ -240,7 +240,7 @@ public class ExecutionConfiguration extends Thread {
 		// }
 
 		if (name.equals(Constants.PARAMETER_VIRTUALIZATION_MANAGER)) {
-			setVirtualizationManager((VirtualizationManager) value);
+			setVirtualizationManager((VirtualizationManagerImpl) value);
 		} else if (name.equals(Constants.PARAMETER_ENVIRONMENT)) {
 			setEnvironment((Environment) value);
 		} else if (name.equals(Constants.PARAMETER_PLACEMENT_MODULE)) {
@@ -267,7 +267,7 @@ public class ExecutionConfiguration extends Thread {
 	}
 
 	public void setVirtualizationManager(
-			VirtualizationManager virtualizationManager) {
+			VirtualizationManagerImpl virtualizationManager) {
 		this.virtualizationManager = virtualizationManager;
 	}
 

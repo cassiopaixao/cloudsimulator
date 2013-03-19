@@ -7,13 +7,16 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import br.usp.ime.cassiop.workloadsim.Workload;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 
 public class TestWorkload extends Workload {
 
-	// private static final Charset charset = Charset.forName("UTF-8");
+	final Logger logger = LoggerFactory.getLogger(TestWorkload.class);
 
 	// private String filenamePattern =
 	// "/var/tmp/cassiop/res/workloads/%d-%d.csv";
@@ -24,14 +27,12 @@ public class TestWorkload extends Workload {
 		long timeInterval = 300;
 		long lastTime = 900;
 
-		TestWorkload gw = new TestWorkload(
-				initialTime, timeInterval, lastTime);
+		TestWorkload gw = new TestWorkload(initialTime, timeInterval, lastTime);
 
 		return gw;
 	}
 
-	public TestWorkload(long initialTime, long timeInterval,
-			long lastTime) {
+	public TestWorkload(long initialTime, long timeInterval, long lastTime) {
 		super(initialTime, timeInterval, lastTime);
 	}
 
@@ -52,14 +53,16 @@ public class TestWorkload extends Workload {
 			}
 
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error("Couldn't read file: {}",
+					String.format(filenamePattern, time, time + timeInterval));
 		} finally {
 			try {
 				reader.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				logger.error(
+						"Couldn't read file: {}",
+						String.format(filenamePattern, time, time
+								+ timeInterval));
 			}
 		}
 
@@ -77,15 +80,5 @@ public class TestWorkload extends Workload {
 		vm.setDemand(ResourceType.MEMORY, Double.parseDouble(data[5]));
 
 		return vm;
-	}
-
-	@Override
-	public boolean hasDemand(long currentTime) {
-
-		if (currentTime >= initialTime && currentTime <= lastTime
-				&& currentTime % timeInterval == 0) {
-			return true;
-		}
-		return false;
 	}
 }

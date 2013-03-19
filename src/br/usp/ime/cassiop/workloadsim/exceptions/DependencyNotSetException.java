@@ -1,17 +1,17 @@
 package br.usp.ime.cassiop.workloadsim.exceptions;
 
-public class UnknownServerException extends Exception {
+public class DependencyNotSetException extends Exception {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public UnknownServerException() {
+	public DependencyNotSetException() {
 		super();
 	}
 
-	public UnknownServerException(String message) {
+	public DependencyNotSetException(String message) {
 		super(message);
 	}
 }

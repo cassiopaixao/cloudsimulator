@@ -9,10 +9,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import br.usp.ime.cassiop.workloadsim.MigrationController;
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
+import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.exceptions.ServerOverloadedException;
+import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
+import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
@@ -23,14 +29,15 @@ public class KhannaMigrationControl implements MigrationController {
 
 	private StatisticsModule statisticsModule = null;
 
+	final Logger logger = LoggerFactory.getLogger(KhannaMigrationControl.class);
+
 	public void setVirtualizationManager(
 			VirtualizationManager virtualizationManager) {
 		this.virtualizationManager = virtualizationManager;
 	}
 
 	@Override
-	public List<VirtualMachine> control(List<VirtualMachine> demand)
-			throws Exception {
+	public List<VirtualMachine> control(List<VirtualMachine> demand) {
 		Map<String, VirtualMachine> isInDemand = new HashMap<String, VirtualMachine>(
 				demand.size());
 		for (VirtualMachine vm : demand) {
@@ -41,7 +48,7 @@ public class KhannaMigrationControl implements MigrationController {
 				.getActiveServersList();
 
 		int virtualMachinesToReallocate = 0;
-		
+
 		List<Server> almostOverloadedServers = new LinkedList<Server>();
 
 		// for each vm already allocated
@@ -50,8 +57,12 @@ public class KhannaMigrationControl implements MigrationController {
 				// updates demands
 				try {
 					server.updateVm(isInDemand.get(vm.getName()));
-				} catch (ServerOverloadedException ex) {
+				} catch (ServerOverloadedException e) {
 					// will be correctly handled
+				} catch (UnknownVirtualMachineException e) {
+					logger.error(
+							"UnknownVirtualMachineException thrown while trying to update VM: {}",
+							vm);
 				}
 			}
 			// checks if the server is almost overloaded
@@ -91,8 +102,20 @@ public class KhannaMigrationControl implements MigrationController {
 						isInDemand.remove(vm.getName());
 					}
 				}
-				virtualizationManager.deallocate(smallestVm);
-				virtualMachinesToReallocate++;
+				try {
+
+					virtualizationManager.deallocate(smallestVm);
+					virtualMachinesToReallocate++;
+
+				} catch (UnknownVirtualMachineException e) {
+					logger.error(
+							"UnknownVirtualMachineException thrown while trying to deallocate VMs. VM: {}",
+							smallestVm);
+				} catch (UnknownServerException e) {
+					logger.error(
+							"UnknownServerException thrown while trying to deallocate VMs. VM: {} ; Server: {}",
+							smallestVm, smallestVm.getCurrentServer());
+				}
 			}
 		}
 
@@ -104,21 +127,24 @@ public class KhannaMigrationControl implements MigrationController {
 	}
 
 	@Override
-	public void setParameters(Map<String, Object> parameters) throws Exception {
+	public void setParameters(Map<String, Object> parameters)
+			throws InvalidParameterException {
 		Object o = parameters.get(Constants.PARAMETER_VIRTUALIZATION_MANAGER);
 		if (o instanceof VirtualizationManager) {
 			setVirtualizationManager((VirtualizationManager) o);
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_VIRTUALIZATION_MANAGER));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_VIRTUALIZATION_MANAGER,
+					VirtualizationManager.class);
 		}
 
 		o = parameters.get(Constants.PARAMETER_STATISTICS_MODULE);
 		if (o instanceof StatisticsModule) {
 			setStatisticsModule((StatisticsModule) o);
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_STATISTICS_MODULE));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_STATISTICS_MODULE,
+					StatisticsModule.class);
 		}
 	}
 

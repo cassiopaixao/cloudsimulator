@@ -5,11 +5,11 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import br.usp.ime.cassiop.workloadsim.PhysicalMachineTypeChooser;
+import br.usp.ime.cassiop.workloadsim.ServerTypeChooser;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 
-public class AlmostWorstFitTypeChooser implements PhysicalMachineTypeChooser {
+public class AlmostWorstFitTypeChooser implements ServerTypeChooser {
 
 	final Logger logger = LoggerFactory
 			.getLogger(AlmostWorstFitTypeChooser.class);

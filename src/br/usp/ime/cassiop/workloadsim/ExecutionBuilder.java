@@ -88,7 +88,7 @@ public class ExecutionBuilder {
 		executionConfiguration = new ExecutionConfiguration();
 
 		executionConfiguration
-				.setVirtualizationManager(new VirtualizationManager());
+				.setVirtualizationManager(new VirtualizationManagerImpl());
 	}
 
 	public ExecutionConfiguration build() throws IOException {

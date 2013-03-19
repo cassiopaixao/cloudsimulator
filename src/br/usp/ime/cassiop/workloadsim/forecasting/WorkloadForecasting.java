@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.ForecastingModule;
 import br.usp.ime.cassiop.workloadsim.Workload;
+import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
@@ -28,16 +29,17 @@ public class WorkloadForecasting implements ForecastingModule {
 	}
 
 	@Override
-	public void setParameters(Map<String, Object> parameters) throws Exception {
+	public void setParameters(Map<String, Object> parameters)
+			throws InvalidParameterException {
 		Object o = parameters.get(Constants.PARAMETER_WORKLOAD);
 		if (o instanceof Workload) {
 			setWorkload((Workload) o);
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_WORKLOAD));
+			throw new InvalidParameterException(Constants.PARAMETER_WORKLOAD,
+					Workload.class);
 		}
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -56,7 +58,8 @@ public class WorkloadForecasting implements ForecastingModule {
 
 		List<VirtualMachine> predictedDemand = workload.getDemand(currentTime);
 
-		logger.debug(String.format("Demand for time %d retrieved.", currentTime));
+		logger.debug(String
+				.format("Demand for time %d retrieved.", currentTime));
 
 		lastPredictionTime = currentTime;
 

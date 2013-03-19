@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import br.usp.ime.cassiop.workloadsim.Measurement;
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.environment.MachineStatus;
+import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.exceptions.ServerOverloadedException;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.model.Server;
@@ -44,7 +45,10 @@ public class MigrationStatistics extends StatisticsModule {
 	private List<Server> machineTypes = null;
 
 	@Override
-	public void setParameters(Map<String, Object> parameters) throws Exception {
+	public void setParameters(Map<String, Object> parameters)
+			throws InvalidParameterException {
+		super.setParameters(parameters);
+
 		Object o = null;
 
 		o = parameters.get(Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER);
@@ -55,9 +59,6 @@ public class MigrationStatistics extends StatisticsModule {
 			logger.debug("Parameter {} is not set. Using default {}",
 					Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER, "");
 		}
-
-		super.setParameters(parameters);
-
 	}
 
 	public void initialize() throws Exception {

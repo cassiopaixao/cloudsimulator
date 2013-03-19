@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Map;
 
 import br.usp.ime.cassiop.workloadsim.environment.MachineStatus;
+import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
+import br.usp.ime.cassiop.workloadsim.exceptions.NoMoreServersAvailableException;
+import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
@@ -20,10 +23,11 @@ public abstract class Environment implements Parametrizable {
 		environmentStatus = new HashMap<Server, MachineStatus>();
 	}
 
-	public Server getMachineOfType(Server pm) throws Exception {
+	public Server getMachineOfType(Server pm) throws UnknownServerException,
+			NoMoreServersAvailableException {
 		MachineStatus status = environmentStatus.get(pm);
 		if (status == null) {
-			throw new Exception(
+			throw new UnknownServerException(
 					"There is no Physical Machines of this type in the environment.");
 		}
 
@@ -57,7 +61,7 @@ public abstract class Environment implements Parametrizable {
 	public void clear() {
 		clear(false);
 	}
-	
+
 	public void clear(boolean deleteMachinesInfo) {
 		for (MachineStatus ms : environmentStatus.values()) {
 			ms.clear();
@@ -67,7 +71,7 @@ public abstract class Environment implements Parametrizable {
 		}
 	}
 
-	public void turnOffMachineOfType(Server server) throws Exception {
+	public void turnOffMachineOfType(Server server) {
 		for (Server sv : environmentStatus.keySet()) {
 			if (server.getType().equals(sv.getType())) {
 				environmentStatus.get(sv).turnOffOne();
@@ -76,7 +80,7 @@ public abstract class Environment implements Parametrizable {
 		}
 	}
 
-	protected void addPmStatus(int machinesAvailable, double cpuCapacity,
+	protected void addServerStatus(int machinesAvailable, double cpuCapacity,
 			double memoryCapacity) {
 		if (MathUtils.equals(machinesAvailable * environmentMultiplier, 0)
 				|| ((int) (machinesAvailable * environmentMultiplier) == 0)) {
@@ -93,13 +97,14 @@ public abstract class Environment implements Parametrizable {
 		environmentStatus.put(pm, status);
 	}
 
-	public void setParameters(Map<String, Object> parameters) throws Exception {
+	public void setParameters(Map<String, Object> parameters)
+			throws InvalidParameterException {
 		Object o = parameters.get(Constants.PARAMETER_ENVIRONMENT_MULTIPLIER);
 		if (o instanceof Double) {
 			setEnvironmentMultiplier(((Double) o).doubleValue());
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_ENVIRONMENT_MULTIPLIER));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_ENVIRONMENT_MULTIPLIER, Double.class);
 		}
 	}
 

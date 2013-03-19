@@ -8,12 +8,17 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import br.usp.ime.cassiop.workloadsim.Workload;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 
 public class GoogleClusterdataFileWorkload extends Workload {
 
+	final Logger logger = LoggerFactory.getLogger(GoogleClusterdataFileWorkload.class);
+	
 	private List<VirtualMachine> lastReadState = null;
 	private long lastReadStateTime = -1;
 
@@ -64,14 +69,14 @@ public class GoogleClusterdataFileWorkload extends Workload {
 			}
 
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error("Couldn't read file: {}",
+					String.format(filenamePattern, time, time + timeInterval));
 		} finally {
 			try {
 				reader.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				logger.error("Couldn't read file: {}",
+						String.format(filenamePattern, time, time + timeInterval));
 			}
 		}
 
@@ -92,15 +97,5 @@ public class GoogleClusterdataFileWorkload extends Workload {
 		vm.setDemand(ResourceType.MEMORY, Double.parseDouble(data[5]));
 
 		return vm;
-	}
-
-	@Override
-	public boolean hasDemand(long currentTime) {
-
-		if (currentTime >= initialTime && currentTime <= lastTime
-				&& currentTime % timeInterval == 0) {
-			return true;
-		}
-		return false;
 	}
 }

@@ -52,11 +52,15 @@ public class Server extends Machine {
 	}
 
 	public void addVirtualMachine(VirtualMachine newVm)
-			throws UnknownVirtualMachineException, ServerOverloadedException {
+			throws UnknownVirtualMachineException {
 		if (newVm == null) {
 			throw new UnknownVirtualMachineException(
 					"It is not possible to assign a null VM to a physical machine.");
 		}
+		if (newVm.getCurrentServer() == this) {
+			return;
+		}
+		
 		virtualMachines.add(newVm);
 		newVm.setCurrentServer(this);
 
@@ -64,11 +68,6 @@ public class Server extends Machine {
 		freeResourceMem -= newVm.getResource(ResourceType.MEMORY);
 
 		updateResourceUtilization();
-
-		if (freeResourceCpu < 0 || freeResourceMem < 0) {
-			throw new ServerOverloadedException();
-		}
-
 	}
 
 	public void clear() {
@@ -231,6 +230,9 @@ public class Server extends Machine {
 
 	public void updateVm(VirtualMachine vmInDemand)
 			throws ServerOverloadedException, UnknownVirtualMachineException {
+		if (vmInDemand == null) {
+			throw new UnknownVirtualMachineException();
+		}
 		for (VirtualMachine vm : virtualMachines) {
 			if (vm.getName().equals(vmInDemand.getName())) {
 				updateVm(vm, vmInDemand);

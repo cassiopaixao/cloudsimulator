@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
+import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
@@ -24,7 +25,8 @@ public class AllocationLog extends StatisticsModule {
 	private static final String NEW_LINE = "\n";
 
 	@Override
-	public void setParameters(Map<String, Object> parameters) throws Exception {
+	public void setParameters(Map<String, Object> parameters)
+			throws InvalidParameterException {
 		super.setParameters(parameters);
 
 		Object o = null;
@@ -34,14 +36,19 @@ public class AllocationLog extends StatisticsModule {
 			setStatisticsFile((File) o);
 
 			if (!statisticsFile.isDirectory() || !statisticsFile.canWrite()) {
-				throw new Exception(String.format(
-						"%s should be a writtable directory.",
-						statisticsFile.getCanonicalPath()));
+				try {
+					throw new InvalidParameterException(String.format(
+							"%s should be a writtable directory.",
+							statisticsFile.getCanonicalPath()));
+				} catch (IOException e) {
+					throw new InvalidParameterException(
+							Constants.PARAMETER_LOG_PATH, File.class);
+				}
 			}
 
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_LOG_PATH));
+			throw new InvalidParameterException(Constants.PARAMETER_LOG_PATH,
+					File.class);
 		}
 	}
 

@@ -9,7 +9,11 @@ import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
-import br.usp.ime.cassiop.workloadsim.exceptions.ServerOverloadedException;
+import br.usp.ime.cassiop.workloadsim.exceptions.DependencyNotSetException;
+import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
+import br.usp.ime.cassiop.workloadsim.exceptions.NoMoreServersAvailableException;
+import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
+import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
@@ -50,12 +54,14 @@ public class AlmostWorstFit implements PlacementWithPowerOffStrategy {
 	 * @see br.ime.usp.cassiop.workloadsim.PlacementModule#consolidateAll()
 	 */
 	@Override
-	public void consolidateAll(List<VirtualMachine> demand) throws Exception {
+	public void consolidateAll(List<VirtualMachine> demand)
+			throws DependencyNotSetException {
 		if (virtualizationManager == null) {
-			throw new Exception("VirtualizationManager is not set.");
+			throw new DependencyNotSetException(
+					"VirtualizationManager is not set.");
 		}
 		if (demand == null) {
-			throw new Exception("Demand is not set.");
+			throw new DependencyNotSetException("Demand is not set.");
 		}
 
 		servers = new ArrayList<Server>(
@@ -66,13 +72,22 @@ public class AlmostWorstFit implements PlacementWithPowerOffStrategy {
 		for (VirtualMachine vm : demand) {
 			try {
 				allocate(vm, servers);
-			} catch (ServerOverloadedException ex) {
+			} catch (UnknownVirtualMachineException e) {
+				logger.error("UnknownVirtualMachineException thrown. VM: {}",
+						vm);
+			} catch (UnknownServerException e) {
+				logger.error("UnknownServerException thrown. {}",
+						e.getMessage());
 			}
-
 		}
 
-		servers_turned_off = PowerOffStrategy.powerOff(servers, this,
-				statisticsModule, virtualizationManager);
+		try {
+			servers_turned_off = PowerOffStrategy.powerOff(servers, this,
+					statisticsModule, virtualizationManager);
+		} catch (UnknownServerException e) {
+			logger.error(e.getMessage());
+			servers_turned_off = -1;
+		}
 
 		statisticsModule.addToStatisticValue(
 				Constants.STATISTIC_VIRTUAL_MACHINES_NOT_ALLOCATED,
@@ -80,31 +95,34 @@ public class AlmostWorstFit implements PlacementWithPowerOffStrategy {
 
 		statisticsModule.addToStatisticValue(
 				Constants.STATISTIC_SERVERS_TURNED_OFF, servers_turned_off);
-
 	}
 
 	@Override
-	public void setParameters(Map<String, Object> parameters) throws Exception {
+	public void setParameters(Map<String, Object> parameters)
+			throws InvalidParameterException {
 		Object o = parameters.get(Constants.PARAMETER_VIRTUALIZATION_MANAGER);
 		if (o instanceof VirtualizationManager) {
 			setVirtualizationManager((VirtualizationManager) o);
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_VIRTUALIZATION_MANAGER));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_VIRTUALIZATION_MANAGER,
+					VirtualizationManager.class);
 		}
 
 		o = parameters.get(Constants.PARAMETER_STATISTICS_MODULE);
 		if (o instanceof StatisticsModule) {
 			setStatisticsModule((StatisticsModule) o);
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_STATISTICS_MODULE));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_STATISTICS_MODULE,
+					StatisticsModule.class);
 		}
 	}
 
 	@Override
 	public void allocate(VirtualMachine vm, List<Server> servers)
-			throws Exception {
+			throws UnknownVirtualMachineException, UnknownServerException {
+		Server destinationServer = null;
 
 		Server worstFitServer = null;
 		double worstFitLeavingResource = -1.0;
@@ -116,7 +134,7 @@ public class AlmostWorstFit implements PlacementWithPowerOffStrategy {
 
 		for (Server server : virtualizationManager.getActiveServersList()) {
 			if (server.canHost(vm)) {
-				// stores the worst-fit allocation
+				// stores the almost worst-fit allocation
 				leavingResource = PlacementUtils.leavingResource(server, vm);
 
 				if (leavingResource > worstFitLeavingResource) {
@@ -133,23 +151,34 @@ public class AlmostWorstFit implements PlacementWithPowerOffStrategy {
 			}
 		}
 
-		if (almostWorstFitServer != null) {
-			virtualizationManager.setVmToServer(vm, almostWorstFitServer);
-		} else if (worstFitServer != null) {
-			virtualizationManager.setVmToServer(vm, worstFitServer);
-		} else {
-			Server inactivePm = virtualizationManager.getNextInactiveServer(vm,
-					new AlmostWorstFitTypeChooser());
-			if (inactivePm != null) {
-				virtualizationManager.setVmToServer(vm, inactivePm);
+		destinationServer = (almostWorstFitServer != null) ? almostWorstFitServer
+				: worstFitServer;
 
-				servers.add(inactivePm);
-			} else {
-				logger.info(
-						"No inactive physical machine provided. Could not consolidate VM {}.",
-						vm.toString());
-				vms_not_allocated++;
+		if (destinationServer == null) {
+			try {
+				destinationServer = virtualizationManager
+						.getNextInactiveServer(vm,
+								new AlmostWorstFitTypeChooser());
+
+				if (destinationServer != null) {
+					servers.add(destinationServer);
+				}
+			} catch (NoMoreServersAvailableException e) {
 			}
+		}
+
+		if (destinationServer == null) {
+			destinationServer = PlacementUtils.lessLossEmptyServer(servers, vm);
+		}
+
+		if (destinationServer == null) {
+			logger.info("No server could allocate the virtual machine: {}.",
+					vm.toString());
+			vms_not_allocated++;
+		}
+
+		if (destinationServer != null) {
+			virtualizationManager.setVmToServer(vm, destinationServer);
 		}
 
 	}

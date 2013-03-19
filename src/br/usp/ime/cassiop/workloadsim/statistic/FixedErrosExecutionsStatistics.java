@@ -12,6 +12,7 @@ import java.util.Map;
 import br.usp.ime.cassiop.workloadsim.Measurement;
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.Workload;
+import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
@@ -39,25 +40,27 @@ public class FixedErrosExecutionsStatistics extends StatisticsModule {
 	private String executionIdentifier = null;
 
 	@Override
-	public void setParameters(Map<String, Object> parameters) throws Exception {
+	public void setParameters(Map<String, Object> parameters)
+			throws InvalidParameterException {
+		super.setParameters(parameters);
+
 		Object o = null;
 		o = parameters.get(Constants.PARAMETER_WORKLOAD);
 		if (o instanceof Workload) {
 			setWorkload((Workload) o);
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_WORKLOAD));
+			throw new InvalidParameterException(Constants.PARAMETER_WORKLOAD,
+					Workload.class);
 		}
 
 		o = parameters.get(Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER);
 		if (o instanceof String) {
 			setExecutionIdentifier((String) o);
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER,
+					String.class);
 		}
-
-		super.setParameters(parameters);
 	}
 
 	public void initialize() throws Exception {

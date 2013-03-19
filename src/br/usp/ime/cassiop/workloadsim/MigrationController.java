@@ -15,7 +15,7 @@ public interface MigrationController extends Parametrizable {
 	 * @return a list with all VMs that should be [re]allocated.
 	 * @throws Exception
 	 */
-	public List<VirtualMachine> control(List<VirtualMachine> demand) throws Exception;
+	public List<VirtualMachine> control(List<VirtualMachine> demand);
 
 	public void setVirtualizationManager(
 			VirtualizationManager virtualizationManager);

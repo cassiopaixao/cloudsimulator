@@ -1,6 +1,14 @@
 package br.usp.ime.cassiop.workloadsim.environment;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import br.usp.ime.cassiop.workloadsim.exceptions.NoMoreServersAvailableException;
+
 public class MachineStatus {
+
+	final Logger logger = LoggerFactory.getLogger(MachineStatus.class);
+
 	private int available;
 	private int used;
 
@@ -26,18 +34,18 @@ public class MachineStatus {
 		return used;
 	}
 
-	public void useOne() throws Exception {
+	public void useOne() throws NoMoreServersAvailableException {
 		if (used == available) {
-			throw new Exception(
-					"There is no more Physical Machines of this type available.");
+			throw new NoMoreServersAvailableException(
+					"There is no more Servers of this type available.");
 		}
 		used++;
 	}
 
-	public void turnOffOne() throws Exception {
+	public void turnOffOne() {
 		if (used == 0) {
-			throw new Exception(
-					"Couldn't turn off a machine that wasn't being used.");
+			logger.error("Tryed to turn off a machine that wasn't being used.");
+			return;
 		}
 		used--;
 	}

@@ -7,12 +7,12 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import br.usp.ime.cassiop.workloadsim.PhysicalMachineTypeChooser;
+import br.usp.ime.cassiop.workloadsim.ServerTypeChooser;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.MathUtils;
 
-public class KhannaTypeChooser implements PhysicalMachineTypeChooser {
+public class KhannaTypeChooser implements ServerTypeChooser {
 
 	final Logger logger = LoggerFactory.getLogger(KhannaTypeChooser.class);
 
@@ -25,7 +25,7 @@ public class KhannaTypeChooser implements PhysicalMachineTypeChooser {
 		Server selectedMachine = null;
 
 		for (Server server : machineTypes) {
-			if (server.canHost(vmDemand, false)) {
+			if (server.canHost(vmDemand, true)) {
 				selectedMachine = server;
 				break;
 			}

@@ -7,6 +7,7 @@ import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
@@ -35,27 +36,28 @@ public class ErrorInjectorForecasting extends WorkloadForecasting {
 	public void setMeanError(double meanError) {
 		this.meanError = meanError;
 	}
-	
+
 	@Override
-	public void setParameters(Map<String, Object> parameters) throws Exception {
+	public void setParameters(Map<String, Object> parameters)
+			throws InvalidParameterException {
 		super.setParameters(parameters);
-		
+
 		Object o = null;
-		
+
 		o = parameters.get(Constants.PARAMETER_FORECASTING_MEAN_ERROR);
 		if (o instanceof Double) {
 			setMeanError(((Double) o).doubleValue());
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_FORECASTING_MEAN_ERROR));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_FORECASTING_MEAN_ERROR, Double.class);
 		}
-		
+
 		o = parameters.get(Constants.PARAMETER_FORECASTING_VARIATION);
 		if (o instanceof Double) {
 			setVariation(((Double) o).doubleValue());
 		} else {
-			throw new Exception(String.format("Invalid parameter: %s",
-					Constants.PARAMETER_FORECASTING_VARIATION));
+			throw new InvalidParameterException(
+					Constants.PARAMETER_FORECASTING_VARIATION, Double.class);
 		}
 	}
 
@@ -86,12 +88,12 @@ public class ErrorInjectorForecasting extends WorkloadForecasting {
 			// + 1;
 			// errorFactor = random() * alfa + beta;
 			errorFactor = random.nextDouble() * alfa + beta;
-			vm.setDemand(ResourceType.CPU,
-					vm.getDemand(ResourceType.CPU) * errorFactor);
+			vm.setDemand(ResourceType.CPU, vm.getDemand(ResourceType.CPU)
+					* errorFactor);
 
 			errorFactor = random.nextDouble() * alfa + beta;
-			vm.setDemand(ResourceType.MEMORY,
-					vm.getDemand(ResourceType.MEMORY) * errorFactor);
+			vm.setDemand(ResourceType.MEMORY, vm.getDemand(ResourceType.MEMORY)
+					* errorFactor);
 		}
 	}
 
