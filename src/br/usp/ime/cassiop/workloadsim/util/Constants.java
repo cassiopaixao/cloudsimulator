@@ -30,6 +30,10 @@ public class Constants {
 
 	public static final String PARAMETER_MIGRATION_CONTROLLER = "MigrationController";
 
+	public static final String PARAMETER_POWER_OFF_STRATEGY = "PowerOffStrategy";
+
+	public static final String PARAMETER_POWER_OFF_LOW_UTILIZATION = "PowerOffLowUtilization";
+
 	public static final String STATISTIC_SERVERS = "servers";
 
 	public static final String STATISTIC_USED_SERVERS = "used_servers";
@@ -54,7 +58,7 @@ public class Constants {
 
 	public static final String STATISTIC_RESIDUAL_CAPACITY = "residual_capacity";
 
-	public static final String PARAMETER_RESOURCE_LOW_UTILIZATION = "resource_low_utilization";
+//	public static final String PARAMETER_RESOURCE_LOW_UTILIZATION = "resource_low_utilization";
 
 	public static final String PARAMETER_LOG_PATH = "LogPath";
 

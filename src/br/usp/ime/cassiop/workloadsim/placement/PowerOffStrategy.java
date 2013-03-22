@@ -1,84 +1,70 @@
 package br.usp.ime.cassiop.workloadsim.placement;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Collection;
+import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import br.usp.ime.cassiop.workloadsim.Parametrizable;
+import br.usp.ime.cassiop.workloadsim.PlacementModule;
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
-import br.usp.ime.cassiop.workloadsim.exceptions.ServerNotEmptyException;
-import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
-import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
+import br.usp.ime.cassiop.workloadsim.exceptions.DependencyNotSetException;
+import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.model.Server;
-import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
-import br.usp.ime.cassiop.workloadsim.util.MathUtils;
+import br.usp.ime.cassiop.workloadsim.util.Constants;
 
-public class PowerOffStrategy {
+public abstract class PowerOffStrategy implements Parametrizable {
 
-	static final Logger logger = LoggerFactory
-			.getLogger(PowerOffStrategy.class);
+	protected VirtualizationManager virtualizationManager = null;
+	protected StatisticsModule statisticsModule = null;
+	protected PlacementModule placementModule = null;
 
-	static int powerOff(List<Server> servers,
-			PlacementWithPowerOffStrategy placementStrategy,
-			StatisticsModule statisticsModule,
-			VirtualizationManager virtualizationManager)
-			throws UnknownServerException {
-		return powerOff(servers, 0.0, placementStrategy, statisticsModule,
-				virtualizationManager);
+	public void setVirtualizationManager(
+			VirtualizationManager virtualizationManager) {
+		this.virtualizationManager = virtualizationManager;
 	}
 
-	static int powerOff(List<Server> servers, double lowUtilization,
-			PlacementWithPowerOffStrategy placementStrategy,
-			StatisticsModule statisticsModule,
-			VirtualizationManager virtualizationManager)
-			throws UnknownServerException {
-		int servers_turned_off = 0;
-
-		for (Server server : servers) {
-			if (MathUtils.lessThanOrEquals(server.getResourceUtilization(),
-					lowUtilization)) {
-				List<VirtualMachine> shouldMigrate = new LinkedList<VirtualMachine>();
-				List<VirtualMachine> vmsOnServer = new ArrayList<VirtualMachine>(
-						server.getVirtualMachines());
-
-				for (VirtualMachine vm : vmsOnServer) {
-					try {
-						virtualizationManager.deallocate(vm);
-						shouldMigrate.add(vm);
-					} catch (UnknownVirtualMachineException e) {
-						logger.error(
-								"Tryed to deallocate an unknown virtual machine: {}",
-								vm);
-					}
-				}
-
-				for (VirtualMachine vm : shouldMigrate) {
-					try {
-						placementStrategy.allocate(vm, servers);
-					} catch (UnknownVirtualMachineException e) {
-						logger.error(
-								"Tryed to allocate an unknown virtual machine: {}",
-								vm);
-					}
-				}
-
-			}
-		}
-
-		for (Server server : servers) {
-			if (server.getVirtualMachines().isEmpty()) {
-				try {
-					virtualizationManager.turnOffServer(server);
-					servers_turned_off++;
-				} catch (ServerNotEmptyException e) {
-					logger.error("Tryed to turn off a nonempty server.");
-				}
-			}
-		}
-
-		return servers_turned_off;
+	public void setStatisticsModule(StatisticsModule statisticsModule) {
+		this.statisticsModule = statisticsModule;
 	}
+
+	public void setPlacementModule(PlacementModule placementModule) {
+		this.placementModule = placementModule;
+	}
+
+	@Override
+	public void setParameters(Map<String, Object> parameters)
+			throws InvalidParameterException {
+		Object o = null;
+
+		o = parameters.get(Constants.PARAMETER_VIRTUALIZATION_MANAGER);
+		if (o instanceof VirtualizationManager) {
+			setVirtualizationManager((VirtualizationManager) o);
+		} else {
+			throw new InvalidParameterException(
+					Constants.PARAMETER_VIRTUALIZATION_MANAGER,
+					VirtualizationManager.class);
+		}
+
+		o = parameters.get(Constants.PARAMETER_STATISTICS_MODULE);
+		if (o instanceof StatisticsModule) {
+			setStatisticsModule((StatisticsModule) o);
+		} else {
+			throw new InvalidParameterException(
+					Constants.PARAMETER_STATISTICS_MODULE,
+					StatisticsModule.class);
+		}
+
+		o = parameters.get(Constants.PARAMETER_PLACEMENT_MODULE);
+		if (o instanceof PlacementModule) {
+			setPlacementModule((PlacementModule) o);
+		} else {
+			throw new InvalidParameterException(
+					Constants.PARAMETER_PLACEMENT_MODULE, PlacementModule.class);
+		}
+
+	}
+
+	public abstract void powerOff(Collection<Server> servers)
+			throws DependencyNotSetException;
+
 }

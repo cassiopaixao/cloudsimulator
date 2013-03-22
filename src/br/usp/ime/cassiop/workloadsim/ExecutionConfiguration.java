@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.migrationcontrol.NoMigrationControl;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
+import br.usp.ime.cassiop.workloadsim.placement.PowerOffStrategy;
+import br.usp.ime.cassiop.workloadsim.poweroff.IdleMachinesPowerOffStrategy;
 import br.usp.ime.cassiop.workloadsim.statistic.AllocationLog;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
@@ -26,6 +28,7 @@ public class ExecutionConfiguration extends Thread {
 	private StatisticsModule statisticsModule = null;
 	private Environment environment = null;
 	private MigrationController migrationController = null;
+	private PowerOffStrategy powerOffStrategy = null;
 	private AllocationLog allocationLog = null;
 
 	private Map<String, Object> parameters = null;
@@ -105,6 +108,7 @@ public class ExecutionConfiguration extends Thread {
 		statisticsModule.setParameters(parameters);
 		environment.setParameters(parameters);
 		migrationController.setParameters(parameters);
+		powerOffStrategy.setParameters(parameters);
 
 		if (allocationLog != null) {
 			allocationLog.setParameters(parameters);
@@ -144,6 +148,8 @@ public class ExecutionConfiguration extends Thread {
 
 				placementModule.consolidateAll(demand);
 
+				powerOffStrategy.powerOff(virtualizationManager.getActiveServersList());
+				
 				if (allocationLog != null) {
 					allocationLog.generateStatistics(currentTime);
 				}
@@ -153,14 +159,14 @@ public class ExecutionConfiguration extends Thread {
 				// some time after
 				currentTime += timeInterval;
 			}
-			
+
 			ExecutionQueue.getInstance().endRun();
-			
+
 		} catch (Exception ex) {
 			ExecutionQueue.getInstance().endRun();
-			
+
 			logger.error("Exception thrown at time {}.", currentTime);
-			
+
 			throw ex;
 		}
 	}
@@ -197,6 +203,10 @@ public class ExecutionConfiguration extends Thread {
 		if (migrationController == null) {
 			logger.info("MigrationController is not set. Using default NoMigrationControl");
 			migrationController = new NoMigrationControl();
+		}
+		if (powerOffStrategy == null) {
+			logger.info("PowerOffStrategy is not set. Using default IdleMachinesPowerOffStrategy");
+			powerOffStrategy = new IdleMachinesPowerOffStrategy();
 		}
 		return parametersOk;
 	}
@@ -317,5 +327,13 @@ public class ExecutionConfiguration extends Thread {
 
 	public void setMigrationController(MigrationController migrationController) {
 		this.migrationController = migrationController;
+	}
+
+	public PowerOffStrategy getPowerOffStrategy() {
+		return powerOffStrategy;
+	}
+
+	public void setPowerOffStrategy(PowerOffStrategy powerOffStrategy) {
+		this.powerOffStrategy = powerOffStrategy;
 	}
 }

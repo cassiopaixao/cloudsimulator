@@ -22,7 +22,10 @@ import br.usp.ime.cassiop.workloadsim.placement.AlmostWorstFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.BestFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.FirstFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.KhannaPlacement;
+import br.usp.ime.cassiop.workloadsim.placement.PowerOffStrategy;
 import br.usp.ime.cassiop.workloadsim.placement.WorstFitDecreasing;
+import br.usp.ime.cassiop.workloadsim.poweroff.IdleMachinesPowerOffStrategy;
+import br.usp.ime.cassiop.workloadsim.poweroff.LowUtilizationPowerOffStrategy;
 import br.usp.ime.cassiop.workloadsim.statistic.DetailedExecutionStatistics;
 import br.usp.ime.cassiop.workloadsim.statistic.FixedErrosExecutionsStatistics;
 import br.usp.ime.cassiop.workloadsim.statistic.MigrationStatistics;
@@ -59,6 +62,10 @@ public class ExecutionBuilder {
 		WORKLOAD
 	}
 
+	public enum PowerOffStrategyToUse {
+		LOW_UTILIZATION, IDLE_MACHINES
+	}
+
 	public enum MigrationControlToUse {
 		NONE, MIGRATE_IF_CHANGE, MIGRATE_IF_CHANGE_AND_SERVER_BECOMES_OVERLOADED, KHANNA
 	}
@@ -70,6 +77,7 @@ public class ExecutionBuilder {
 	private ForecasterToUse forecaster = null;
 	private MeasurementToUse measurement = null;
 	private MigrationControlToUse migration = null;
+	private PowerOffStrategyToUse powerOffStrategy = null;
 	private boolean shouldLog = false;
 
 	public void setMigrationController(MigrationControlToUse migration) {
@@ -89,6 +97,7 @@ public class ExecutionBuilder {
 
 		executionConfiguration
 				.setVirtualizationManager(new VirtualizationManagerImpl());
+
 	}
 
 	public ExecutionConfiguration build() throws IOException {
@@ -152,6 +161,13 @@ public class ExecutionBuilder {
 				Constants.PARAMETER_FORECASTING_MODULE,
 				getForecastingModule(forecaster));
 		this.forecaster = forecaster;
+	}
+
+	public void setPowerOffStrategy(PowerOffStrategyToUse powerOffStrategy) {
+		executionConfiguration.setParameter(
+				Constants.PARAMETER_POWER_OFF_STRATEGY,
+				getPowerOffStrategy(powerOffStrategy));
+		this.powerOffStrategy = powerOffStrategy;
 	}
 
 	public void setShouldLog(boolean shouldLog) {
@@ -414,6 +430,17 @@ public class ExecutionBuilder {
 		}
 		logger.info("Could not instantiate the environment {}",
 				environment.toString());
+		return null;
+	}
+
+	private PowerOffStrategy getPowerOffStrategy(
+			PowerOffStrategyToUse powerOffStrategy) {
+		switch (powerOffStrategy) {
+		case LOW_UTILIZATION:
+			return new LowUtilizationPowerOffStrategy();
+		case IDLE_MACHINES:
+			return new IdleMachinesPowerOffStrategy();
+		}
 		return null;
 	}
 

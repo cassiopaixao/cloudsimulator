@@ -16,6 +16,7 @@ import br.usp.ime.cassiop.workloadsim.ExecutionBuilder.ForecasterToUse;
 import br.usp.ime.cassiop.workloadsim.ExecutionBuilder.MeasurementToUse;
 import br.usp.ime.cassiop.workloadsim.ExecutionBuilder.MigrationControlToUse;
 import br.usp.ime.cassiop.workloadsim.ExecutionBuilder.PlacementType;
+import br.usp.ime.cassiop.workloadsim.ExecutionBuilder.PowerOffStrategyToUse;
 import br.usp.ime.cassiop.workloadsim.ExecutionBuilder.StatisticsType;
 import br.usp.ime.cassiop.workloadsim.ExecutionBuilder.WorkloadToUse;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
@@ -30,7 +31,7 @@ public class Main {
 	public static void main(String[] args) {
 
 		Locale.setDefault(Locale.US);
-		
+
 		List<Double> errorArgs = null;
 
 		boolean shouldLog = false;
@@ -221,6 +222,14 @@ public class Main {
 									.setMeasurementModule(MeasurementToUse.WORKLOAD);
 
 							executionBuilder.setMigrationController(migration);
+
+							if (placement == PlacementType.KHANNA) {
+								executionBuilder
+										.setPowerOffStrategy(PowerOffStrategyToUse.LOW_UTILIZATION);
+							} else {
+								executionBuilder
+										.setPowerOffStrategy(PowerOffStrategyToUse.IDLE_MACHINES);
+							}
 
 							executionBuilder.setParameter(
 									Constants.PARAMETER_ENVIRONMENT_MULTIPLIER,

@@ -180,6 +180,9 @@ public class Server extends Machine {
 	 */
 	public boolean canHost(VirtualMachine vmDemand,
 			boolean avoidBeingAlmostOverloaded) {
+		if (vmDemand == null) {
+			return false;
+		}
 		if (avoidBeingAlmostOverloaded) {
 			if (freeResourceCpu + kneePerformanceLossCpuNrml - resourceCpu >= vmDemand.resourceCpu
 					&& freeResourceMem + kneePerformanceLossMemNrml

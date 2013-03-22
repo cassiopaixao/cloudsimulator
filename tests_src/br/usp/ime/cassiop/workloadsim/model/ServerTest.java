@@ -471,6 +471,13 @@ public class ServerTest {
 		assertTrue(server.canHost(vm3));
 		assertFalse(server.canHost(vm4));
 	}
+	
+	@Test
+	public void testCanHostNullVirtualMachine() {
+		Server server = buildCanonicalServer();
+
+		assertFalse(server.canHost(null));
+	}
 
 	@Test
 	public void testCanHostVirtualMachineBoolean() {

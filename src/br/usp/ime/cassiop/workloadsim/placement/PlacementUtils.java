@@ -1,5 +1,6 @@
 package br.usp.ime.cassiop.workloadsim.placement;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -46,7 +47,7 @@ public class PlacementUtils {
 		return sum;
 	}
 
-	public static Server lessLossEmptyServer(List<Server> servers,
+	public static Server lessLossEmptyServer(Collection<Server> servers,
 			VirtualMachine vm) {
 		List<Server> emptyServers = new LinkedList<Server>();
 		for (Server server : servers) {
