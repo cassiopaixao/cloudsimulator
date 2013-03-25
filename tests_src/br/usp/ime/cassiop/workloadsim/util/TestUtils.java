@@ -1,11 +1,40 @@
 package br.usp.ime.cassiop.workloadsim.util;
 
+import static org.junit.Assert.*;
+
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 
 public class TestUtils {
 
+	public static class AddVmToServer implements Answer<Object> {
+		@Override
+		public Object answer(InvocationOnMock invocation) throws Throwable {
+			Object[] arguments = invocation.getArguments();
+
+			VirtualMachine vm = (VirtualMachine) arguments[0];
+			Server server = (Server) arguments[1];
+
+			if (vm != null && server != null) {
+				server.addVirtualMachine(vm);
+			}
+
+			return null;
+		}
+	}
+	
+	public static void failConfiguringMocks(Exception e) {
+		fail("Exception thrown configuring mocks: " + e.getMessage());
+	}
+	
+	public static void failVerifyingMethodsCalls(Exception e) {
+		fail("Exception thrown verifying methods' calls: " + e.getMessage());
+	}
+	
 	public static Server buildServer(double cpu, double mem) {
 		Server server = new Server();
 

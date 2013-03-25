@@ -25,22 +25,6 @@ import br.usp.ime.cassiop.workloadsim.util.Constants;
 
 public class FirstFitDecreasingTest {
 
-	private class AddVmToServer implements Answer<Object> {
-		@Override
-		public Object answer(InvocationOnMock invocation) throws Throwable {
-			Object[] arguments = invocation.getArguments();
-
-			VirtualMachine vm = (VirtualMachine) arguments[0];
-			Server server = (Server) arguments[1];
-
-			if (vm != null && server != null) {
-				server.addVirtualMachine(vm);
-			}
-
-			return null;
-		}
-	}
-
 	@Test
 	public void testConsolidateAll() throws DependencyNotSetException {
 		VirtualizationManager virtualizationManager = mock(VirtualizationManager.class);
@@ -79,8 +63,53 @@ public class FirstFitDecreasingTest {
 		firstFitDecreasing.consolidateAll(vmList);
 
 		try {
+			verify(virtualizationManager).getActiveServersList();
 			verify(virtualizationManager).setVmToServer(vm2, server2);
 			verify(virtualizationManager).setVmToServer(vm1, server3);
+		} catch (Exception e) {
+			fail("Exception thrown verifying methods' calls: " + e.getMessage());
+		}
+	}
+
+	@Test
+	public void testConsolidateAllRequestingNewServer()
+			throws DependencyNotSetException {
+		VirtualizationManager virtualizationManager = mock(VirtualizationManager.class);
+		StatisticsModule statisticsModule = mock(StatisticsModule.class);
+
+		FirstFitDecreasing firstFitDecreasing = new FirstFitDecreasing();
+		firstFitDecreasing.setStatisticsModule(statisticsModule);
+		firstFitDecreasing.setVirtualizationManager(virtualizationManager);
+
+		Server server1 = buildServer(1.0, 1.0);
+
+		VirtualMachine vm1 = buildVirtualMachine(0.6, 0.25);
+
+		Collection<Server> serverList = new ArrayList<Server>();
+		serverList.add(server1);
+
+		List<VirtualMachine> vmList = new ArrayList<VirtualMachine>();
+		vmList.add(vm1);
+
+		try {
+			when(virtualizationManager.getActiveServersList()).thenReturn(
+					new LinkedList<Server>());
+			when(
+					virtualizationManager.getNextInactiveServer(eq(vm1),
+							any(FirstFitTypeChooser.class)))
+					.thenReturn(server1);
+			doAnswer(new AddVmToServer())
+					.when(virtualizationManager)
+					.setVmToServer(any(VirtualMachine.class), any(Server.class));
+		} catch (Exception e) {
+			fail("Exception thrown in mock configuration: " + e.getMessage());
+		}
+
+		firstFitDecreasing.consolidateAll(vmList);
+
+		try {
+			verify(virtualizationManager).getNextInactiveServer(eq(vm1), any(FirstFitTypeChooser.class));
+			verify(virtualizationManager).setVmToServer(vm1, server1);
 		} catch (Exception e) {
 			fail("Exception thrown verifying methods' calls: " + e.getMessage());
 		}

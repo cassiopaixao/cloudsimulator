@@ -33,6 +33,10 @@ public class BestFitDecreasing extends PlacementModule {
 			throw new DependencyNotSetException(
 					"VirtualizationManager is not set.");
 		}
+		if (statisticsModule == null) {
+			throw new DependencyNotSetException(
+					"StatisticsModule is not set.");
+		}
 		if (demand == null) {
 			throw new DependencyNotSetException("Demand is not set.");
 		}
