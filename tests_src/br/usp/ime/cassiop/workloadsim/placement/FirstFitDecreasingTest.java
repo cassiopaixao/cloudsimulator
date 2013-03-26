@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import br.usp.ime.cassiop.workloadsim.ServerTypeChooser;
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
 import br.usp.ime.cassiop.workloadsim.exceptions.DependencyNotSetException;
@@ -285,6 +286,8 @@ public class FirstFitDecreasingTest {
 
 		try {
 			verify(virtualizationManager).setVmToServer(virtualMachine, server);
+			verify(virtualizationManager, never()).getNextInactiveServer(
+					any(VirtualMachine.class), any(ServerTypeChooser.class));
 		} catch (Exception e) {
 			fail("Exception thrown verifying methods' calls: " + e.getMessage());
 		}

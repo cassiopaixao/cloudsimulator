@@ -1,6 +1,7 @@
 package br.usp.ime.cassiop.workloadsim.placement;
 
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 import static br.usp.ime.cassiop.workloadsim.util.TestUtils.*;
@@ -11,6 +12,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import br.usp.ime.cassiop.workloadsim.ServerTypeChooser;
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
 import br.usp.ime.cassiop.workloadsim.exceptions.DependencyNotSetException;
@@ -188,7 +190,7 @@ public class WorstFitDecreasingTest {
 		try {
 			verify(virtualizationManager).setVmToServer(vm, server2);
 			verify(virtualizationManager, never()).getNextInactiveServer(
-					eq(vm), any(WorstFitTypeChooser.class));
+					any(VirtualMachine.class), any(ServerTypeChooser.class));
 		} catch (Exception e) {
 			failVerifyingMethodsCalls(e);
 		}

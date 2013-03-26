@@ -58,7 +58,7 @@ public class AlmostWorstFit extends PlacementModule {
 
 		double leavingResource;
 
-		for (Server server : virtualizationManager.getActiveServersList()) {
+		for (Server server : servers) {
 			if (server.canHost(vm)) {
 				// stores the almost worst-fit allocation
 				leavingResource = PlacementUtils.leavingResource(server, vm);
