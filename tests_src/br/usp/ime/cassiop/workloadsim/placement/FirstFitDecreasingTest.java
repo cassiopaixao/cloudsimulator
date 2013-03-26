@@ -1,8 +1,18 @@
 package br.usp.ime.cassiop.workloadsim.placement;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-import static br.usp.ime.cassiop.workloadsim.util.TestUtils.*;
+import static br.usp.ime.cassiop.workloadsim.util.TestUtils.buildServer;
+import static br.usp.ime.cassiop.workloadsim.util.TestUtils.buildVirtualMachine;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,8 +20,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
@@ -22,6 +30,7 @@ import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
+import br.usp.ime.cassiop.workloadsim.util.TestUtils.AddVmToServer;
 
 public class FirstFitDecreasingTest {
 

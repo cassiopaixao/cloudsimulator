@@ -71,6 +71,20 @@ public abstract class PlacementModule implements Parametrizable {
 		}
 	}
 
+	protected void verifyDependencies(List<VirtualMachine> demand)
+			throws DependencyNotSetException {
+		if (virtualizationManager == null) {
+			throw new DependencyNotSetException(
+					"VirtualizationManager is not set.");
+		}
+		if (statisticsModule == null) {
+			throw new DependencyNotSetException("StatisticsModule is not set.");
+		}
+		if (demand == null) {
+			throw new DependencyNotSetException("Demand is not set.");
+		}
+	}
+
 	public abstract void consolidateAll(List<VirtualMachine> demand)
 			throws DependencyNotSetException;
 

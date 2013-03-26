@@ -24,13 +24,7 @@ public class KhannaPlacement extends PlacementModule {
 
 	public void consolidateAll(List<VirtualMachine> demand)
 			throws DependencyNotSetException {
-		if (virtualizationManager == null) {
-			throw new DependencyNotSetException(
-					"VirtualizationManager is not set.");
-		}
-		if (demand == null) {
-			throw new DependencyNotSetException("Demand is not set.");
-		}
+		verifyDependencies(demand);
 
 		List<Server> servers = new ArrayList<Server>(
 				virtualizationManager.getActiveServersList());
