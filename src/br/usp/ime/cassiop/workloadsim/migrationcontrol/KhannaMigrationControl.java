@@ -13,9 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.MigrationController;
-import br.usp.ime.cassiop.workloadsim.StatisticsModule;
-import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
-import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
+import br.usp.ime.cassiop.workloadsim.exceptions.DependencyNotSetException;
 import br.usp.ime.cassiop.workloadsim.exceptions.ServerOverloadedException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
@@ -24,20 +22,15 @@ import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 import br.usp.ime.cassiop.workloadsim.util.MathUtils;
 
-public class KhannaMigrationControl implements MigrationController {
-	private VirtualizationManager virtualizationManager = null;
-
-	private StatisticsModule statisticsModule = null;
+public class KhannaMigrationControl extends MigrationController {
 
 	final Logger logger = LoggerFactory.getLogger(KhannaMigrationControl.class);
 
-	public void setVirtualizationManager(
-			VirtualizationManager virtualizationManager) {
-		this.virtualizationManager = virtualizationManager;
-	}
-
 	@Override
-	public List<VirtualMachine> control(List<VirtualMachine> demand) {
+	public List<VirtualMachine> control(List<VirtualMachine> demand)
+			throws DependencyNotSetException {
+		verifyDependencies(demand);
+
 		Map<String, VirtualMachine> isInDemand = new HashMap<String, VirtualMachine>(
 				demand.size());
 		for (VirtualMachine vm : demand) {
@@ -125,31 +118,4 @@ public class KhannaMigrationControl implements MigrationController {
 
 		return new ArrayList<VirtualMachine>(isInDemand.values());
 	}
-
-	@Override
-	public void setParameters(Map<String, Object> parameters)
-			throws InvalidParameterException {
-		Object o = parameters.get(Constants.PARAMETER_VIRTUALIZATION_MANAGER);
-		if (o instanceof VirtualizationManager) {
-			setVirtualizationManager((VirtualizationManager) o);
-		} else {
-			throw new InvalidParameterException(
-					Constants.PARAMETER_VIRTUALIZATION_MANAGER,
-					VirtualizationManager.class);
-		}
-
-		o = parameters.get(Constants.PARAMETER_STATISTICS_MODULE);
-		if (o instanceof StatisticsModule) {
-			setStatisticsModule((StatisticsModule) o);
-		} else {
-			throw new InvalidParameterException(
-					Constants.PARAMETER_STATISTICS_MODULE,
-					StatisticsModule.class);
-		}
-	}
-
-	public void setStatisticsModule(StatisticsModule statisticsModule) {
-		this.statisticsModule = statisticsModule;
-	}
-
 }

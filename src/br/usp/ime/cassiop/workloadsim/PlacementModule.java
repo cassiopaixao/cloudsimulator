@@ -3,16 +3,12 @@ package br.usp.ime.cassiop.workloadsim;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import br.usp.ime.cassiop.workloadsim.exceptions.DependencyNotSetException;
 import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
-import br.usp.ime.cassiop.workloadsim.placement.FirstFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.PowerOffStrategy;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
@@ -23,9 +19,7 @@ public abstract class PlacementModule implements Parametrizable {
 	protected StatisticsModule statisticsModule = null;
 
 	protected PowerOffStrategy powerOffStrategy = null;
-
-	final Logger logger = LoggerFactory.getLogger(FirstFitDecreasing.class);
-
+	
 	public void setVirtualizationManager(
 			VirtualizationManager virtualizationManager) {
 		this.virtualizationManager = virtualizationManager;

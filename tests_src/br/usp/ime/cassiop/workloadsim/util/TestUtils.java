@@ -27,14 +27,33 @@ public class TestUtils {
 		}
 	}
 	
+	public static class RemoveVmFromServer implements Answer<Object> {
+		@Override
+		public Object answer(InvocationOnMock invocation) throws Throwable {
+			Object[] arguments = invocation.getArguments();
+
+			VirtualMachine vm = (VirtualMachine) arguments[0];
+			
+			if (vm != null && vm.getCurrentServer() != null) {
+				vm.getCurrentServer().removeVirtualMachine(vm);
+			}
+
+			return null;
+		}
+	}
+
 	public static void failConfiguringMocks(Exception e) {
 		fail("Exception thrown configuring mocks: " + e.getMessage());
 	}
-	
+
+	public static void failConfiguringInitialState(Exception e) {
+		fail("Exception thrown configuring initial state: " + e.getMessage());
+	}
+
 	public static void failVerifyingMethodsCalls(Exception e) {
 		fail("Exception thrown verifying methods' calls: " + e.getMessage());
 	}
-	
+
 	public static Server buildServer(double cpu, double mem) {
 		Server server = new Server();
 
