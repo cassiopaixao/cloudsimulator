@@ -96,7 +96,6 @@ public class KhannaMigrationControl extends MigrationController {
 					}
 				}
 				try {
-
 					virtualizationManager.deallocate(smallestVm);
 					virtualMachinesToReallocate++;
 

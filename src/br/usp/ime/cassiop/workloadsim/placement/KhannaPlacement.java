@@ -33,28 +33,7 @@ public class KhannaPlacement extends PlacementModule {
 			try {
 				if (vm.getCurrentServer() == null) {
 					allocate(vm, servers);
-				} else {
-					try {
-						vm.getCurrentServer().updateVm(vm);
-						if (vm.getCurrentServer().isAlmostOverloaded()) {
-							migrate(vm.getCurrentServer(), servers);
-						}
-					} catch (ServerOverloadedException ex) {
-						migrate(vm.getCurrentServer(), servers);
-					}
 				}
-			} catch (UnknownVirtualMachineException e) {
-				logger.error("UnknownVirtualMachineException thrown. VM: {}",
-						vm);
-			} catch (UnknownServerException e) {
-				logger.error("UnknownServerException thrown. {}",
-						e.getMessage());
-			}
-		}
-
-		for (VirtualMachine vm : demand) {
-			try {
-				allocate(vm, servers);
 			} catch (UnknownVirtualMachineException e) {
 				logger.error("UnknownVirtualMachineException thrown. VM: {}",
 						vm);
