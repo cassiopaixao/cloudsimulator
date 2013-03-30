@@ -68,6 +68,8 @@ public class WorstFitDecreasingTest {
 			verify(virtualizationManager).setVmToServer(vm2, server3);
 			verify(virtualizationManager).setVmToServer(vm3, server1);
 			verify(virtualizationManager).setVmToServer(vm1, server2);
+			verify(virtualizationManager, times(3)).setVmToServer(
+					any(VirtualMachine.class), any(Server.class));
 
 			verify(virtualizationManager).getActiveServersList();
 			verify(virtualizationManager, never()).getNextInactiveServer(

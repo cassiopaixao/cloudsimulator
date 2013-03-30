@@ -11,6 +11,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -76,6 +77,8 @@ public class FirstFitDecreasingTest {
 			verify(virtualizationManager).getActiveServersList();
 			verify(virtualizationManager).setVmToServer(vm2, server2);
 			verify(virtualizationManager).setVmToServer(vm1, server3);
+			verify(virtualizationManager, times(2)).setVmToServer(
+					any(VirtualMachine.class), any(Server.class));
 		} catch (Exception e) {
 			fail("Exception thrown verifying methods' calls: " + e.getMessage());
 		}
@@ -118,7 +121,8 @@ public class FirstFitDecreasingTest {
 		firstFitDecreasing.consolidateAll(vmList);
 
 		try {
-			verify(virtualizationManager).getNextInactiveServer(eq(vm1), any(FirstFitTypeChooser.class));
+			verify(virtualizationManager).getNextInactiveServer(eq(vm1),
+					any(FirstFitTypeChooser.class));
 			verify(virtualizationManager).setVmToServer(vm1, server1);
 		} catch (Exception e) {
 			fail("Exception thrown verifying methods' calls: " + e.getMessage());

@@ -1,16 +1,8 @@
 package br.usp.ime.cassiop.workloadsim.placement;
 
-import static br.usp.ime.cassiop.workloadsim.util.TestUtils.buildServer;
-import static br.usp.ime.cassiop.workloadsim.util.TestUtils.buildVirtualMachine;
-import static br.usp.ime.cassiop.workloadsim.util.TestUtils.failConfiguringMocks;
-import static br.usp.ime.cassiop.workloadsim.util.TestUtils.failVerifyingMethodsCalls;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static br.usp.ime.cassiop.workloadsim.util.TestUtils.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,6 +62,8 @@ public class AlmostWorstFitDecreasingTest {
 			verify(virtualizationManager).setVmToServer(eq(vm2), eq(server3));
 			verify(virtualizationManager).setVmToServer(eq(vm1), eq(server2));
 			verify(virtualizationManager).setVmToServer(eq(vm3), eq(server2));
+			verify(virtualizationManager, times(3)).setVmToServer(
+					any(VirtualMachine.class), any(Server.class));
 			verify(virtualizationManager, never()).getNextInactiveServer(
 					any(VirtualMachine.class), any(ServerTypeChooser.class));
 		} catch (Exception e) {

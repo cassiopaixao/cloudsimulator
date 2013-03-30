@@ -9,6 +9,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -74,6 +75,8 @@ public class AlmostWorstFitTest {
 			verify(virtualizationManager).setVmToServer(eq(vm1), eq(server3));
 			verify(virtualizationManager).setVmToServer(eq(vm2), eq(server3));
 			verify(virtualizationManager).setVmToServer(eq(vm3), eq(server2));
+			verify(virtualizationManager, times(3)).setVmToServer(
+					any(VirtualMachine.class), any(Server.class));
 			verify(virtualizationManager, never()).getNextInactiveServer(
 					any(VirtualMachine.class), any(ServerTypeChooser.class));
 		} catch (Exception e) {

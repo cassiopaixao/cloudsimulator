@@ -10,6 +10,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -74,6 +75,8 @@ public class KhannaPlacementTest {
 			verify(virtualizationManager).setVmToServer(vm1, server2);
 			verify(virtualizationManager).setVmToServer(vm2, server3);
 			verify(virtualizationManager).setVmToServer(vm3, server1);
+			verify(virtualizationManager, times(3)).setVmToServer(
+					any(VirtualMachine.class), any(Server.class));
 		} catch (Exception e) {
 			failVerifyingMethodsCalls(e);
 		}

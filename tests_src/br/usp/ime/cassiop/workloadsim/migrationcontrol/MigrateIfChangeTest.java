@@ -5,6 +5,7 @@ import static br.usp.ime.cassiop.workloadsim.util.TestUtils.buildVirtualMachine;
 import static br.usp.ime.cassiop.workloadsim.util.TestUtils.failConfiguringInitialState;
 import static br.usp.ime.cassiop.workloadsim.util.TestUtils.failConfiguringMocks;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -143,6 +144,9 @@ public class MigrateIfChangeTest {
 		assertTrue(server1.getVirtualMachines().isEmpty());
 		verify(statisticsModule).setStatisticValue(
 				eq(Constants.STATISTIC_VIRTUAL_MACHINES_TO_REALLOCATE), eq(3));
+		for (VirtualMachine vm : result) {
+			assertNull(vm.getCurrentServer());
+		}
 	}
 	
 	@Test
