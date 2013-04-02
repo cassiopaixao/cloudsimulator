@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import br.usp.ime.cassiop.workloadsim.PlacementModule;
 import br.usp.ime.cassiop.workloadsim.exceptions.DependencyNotSetException;
 import br.usp.ime.cassiop.workloadsim.exceptions.NoMoreServersAvailableException;
-import br.usp.ime.cassiop.workloadsim.exceptions.ServerOverloadedException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
 import br.usp.ime.cassiop.workloadsim.model.Server;
@@ -37,44 +36,6 @@ public class KhannaPlacement extends PlacementModule {
 			} catch (UnknownVirtualMachineException e) {
 				logger.error("UnknownVirtualMachineException thrown. VM: {}",
 						vm);
-			} catch (UnknownServerException e) {
-				logger.error("UnknownServerException thrown. {}",
-						e.getMessage());
-			}
-		}
-	}
-
-	private void migrate(Server overloadedServer, List<Server> servers) {
-
-		while (overloadedServer.isAlmostOverloaded()) {
-
-			VirtualMachine smallestVm = null;
-			double smallestVmResourceUtilization = Double.MAX_VALUE;
-
-			for (VirtualMachine vm : overloadedServer.getVirtualMachines()) {
-				if (vm.getResourceUtilization() < smallestVmResourceUtilization) {
-					smallestVm = vm;
-					smallestVmResourceUtilization = smallestVm
-							.getResourceUtilization();
-				}
-			}
-
-			try {
-				virtualizationManager.deallocate(smallestVm);
-			} catch (UnknownVirtualMachineException e) {
-				logger.error("UnknownVirtualMachineException thrown. VM: {}",
-						smallestVm);
-			} catch (UnknownServerException e) {
-				logger.error(
-						"UnknownServerException thrown while trying to deallocate VM ({}). Server: {}",
-						smallestVm, smallestVm.getCurrentServer());
-			}
-
-			try {
-				allocate(smallestVm, servers);
-			} catch (UnknownVirtualMachineException e) {
-				logger.error("UnknownVirtualMachineException thrown. VM: {}",
-						smallestVm);
 			} catch (UnknownServerException e) {
 				logger.error("UnknownServerException thrown. {}",
 						e.getMessage());

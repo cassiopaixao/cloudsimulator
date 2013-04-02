@@ -12,7 +12,6 @@ import br.usp.ime.cassiop.workloadsim.MigrationController;
 import br.usp.ime.cassiop.workloadsim.exceptions.DependencyNotSetException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
-import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
@@ -36,19 +35,19 @@ public class NoMigrationControl extends MigrationController {
 		int newVirtualMachines = demand.size();
 
 		// for each vm already allocated
-		for (Server server : virtualizationManager.getActiveServersList()) {
-			for (VirtualMachine vm : server.getVirtualMachines()) {
-				shouldDeallocate.add(vm);
-				// if it is in the updated demand
-				if (isInDemand.containsKey(vm.getName())) {
-					newVirtualMachines--;
-					// set info about last server
-					isInDemand.get(vm.getName()).setLastServer(server);
+		for (VirtualMachine vm : virtualizationManager
+				.getActiveVirtualMachines().values()) {
+			shouldDeallocate.add(vm);
+			// if it is in the updated demand
+			if (isInDemand.containsKey(vm.getName())) {
+				newVirtualMachines--;
+				// set info about last server
+				isInDemand.get(vm.getName()).setLastServer(
+						vm.getCurrentServer());
 
-				} else {
-					// put in demand to reallocate
-					demand.add(vm);
-				}
+			} else {
+				// put in demand to reallocate
+				demand.add(vm);
 			}
 		}
 
@@ -66,8 +65,6 @@ public class NoMigrationControl extends MigrationController {
 			}
 		}
 
-		statisticsModule.setStatisticValue(
-				Constants.STATISTIC_NEW_VIRTUAL_MACHINES, newVirtualMachines);
 		statisticsModule.setStatisticValue(
 				Constants.STATISTIC_VIRTUAL_MACHINES_TO_REALLOCATE,
 				demand.size() - newVirtualMachines);

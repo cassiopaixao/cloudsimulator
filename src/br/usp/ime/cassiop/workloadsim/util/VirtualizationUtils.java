@@ -1,27 +1,24 @@
 package br.usp.ime.cassiop.workloadsim.util;
 
-import java.util.List;
+import java.util.Comparator;
 
-import br.usp.ime.cassiop.workloadsim.Measurement;
-import br.usp.ime.cassiop.workloadsim.model.ResourceType;
-import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 
 public class VirtualizationUtils {
 
-	public static boolean isServerOverloaded(Server pm, Measurement measurement) {
-		List<VirtualMachine> vms = pm.getVirtualMachines();
+	public static class OrderByResourceUtilization implements
+			Comparator<VirtualMachine> {
+		@Override
+		public int compare(VirtualMachine vm0, VirtualMachine vm1) {
+			if (vm0.getResourceUtilization() < vm1.getResourceUtilization()) {
+				return -1;
+			} else if (MathUtils.equals(vm0.getResourceUtilization(),
+					vm1.getResourceUtilization())) {
+				return 0;
+			} else {
+				return 1;
+			}
 
-		double sum;
-		for (ResourceType type : ResourceType.values()) {
-			sum = 0;
-			for (VirtualMachine vm : vms) {
-				sum += measurement.getVmActualDemand(vm, type);
-			}
-			if (MathUtils.greaterThan(sum, pm.getCapacity(type))) {
-				return true;
-			}
 		}
-		return false;
 	}
 }
