@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.migrationcontrol.NoMigrationControl;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
-import br.usp.ime.cassiop.workloadsim.placement.PowerOffStrategy;
 import br.usp.ime.cassiop.workloadsim.poweroff.IdleMachinesPowerOffStrategy;
 import br.usp.ime.cassiop.workloadsim.statistic.AllocationLog;
 import br.usp.ime.cassiop.workloadsim.util.Constants;

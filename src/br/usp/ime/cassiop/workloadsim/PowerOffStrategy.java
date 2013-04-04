@@ -1,12 +1,8 @@
-package br.usp.ime.cassiop.workloadsim.placement;
+package br.usp.ime.cassiop.workloadsim;
 
 import java.util.Collection;
 import java.util.Map;
 
-import br.usp.ime.cassiop.workloadsim.Parametrizable;
-import br.usp.ime.cassiop.workloadsim.PlacementModule;
-import br.usp.ime.cassiop.workloadsim.StatisticsModule;
-import br.usp.ime.cassiop.workloadsim.VirtualizationManager;
 import br.usp.ime.cassiop.workloadsim.exceptions.DependencyNotSetException;
 import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.model.Server;

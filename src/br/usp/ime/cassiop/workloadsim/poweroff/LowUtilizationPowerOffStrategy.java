@@ -9,6 +9,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import br.usp.ime.cassiop.workloadsim.PowerOffStrategy;
 import br.usp.ime.cassiop.workloadsim.exceptions.DependencyNotSetException;
 import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.exceptions.ServerNotEmptyException;
@@ -16,7 +17,6 @@ import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
-import br.usp.ime.cassiop.workloadsim.placement.PowerOffStrategy;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 import br.usp.ime.cassiop.workloadsim.util.MathUtils;
 
@@ -46,17 +46,8 @@ public class LowUtilizationPowerOffStrategy extends PowerOffStrategy {
 
 	public void powerOff(Collection<Server> serversCollection)
 			throws DependencyNotSetException {
-		if (placementModule == null) {
-			throw new DependencyNotSetException("PlacementModule is not set.");
-		}
-		if (statisticsModule == null) {
-			throw new DependencyNotSetException(
-					"VirtualizationManager is not set.");
-		}
-		if (virtualizationManager == null) {
-			throw new DependencyNotSetException(
-					"VirtualizationManager is not set.");
-		}
+		verifyDependencies();
+
 		if (serversCollection == null) {
 			return;
 		}
@@ -89,7 +80,7 @@ public class LowUtilizationPowerOffStrategy extends PowerOffStrategy {
 
 				for (VirtualMachine vm : shouldMigrate) {
 					try {
-						placementModule.allocate(vm, servers);
+							placementModule.allocate(vm, servers);
 					} catch (UnknownVirtualMachineException e) {
 						logger.error(
 								"Tryed to allocate an unknown virtual machine: {}",
@@ -120,6 +111,20 @@ public class LowUtilizationPowerOffStrategy extends PowerOffStrategy {
 
 		statisticsModule.setStatisticValue(
 				Constants.STATISTIC_SERVERS_TURNED_OFF, servers_turned_off);
+	}
+
+	private void verifyDependencies() throws DependencyNotSetException {
+		if (placementModule == null) {
+			throw new DependencyNotSetException("PlacementModule is not set.");
+		}
+		if (statisticsModule == null) {
+			throw new DependencyNotSetException(
+					"VirtualizationManager is not set.");
+		}
+		if (virtualizationManager == null) {
+			throw new DependencyNotSetException(
+					"VirtualizationManager is not set.");
+		}
 	}
 
 	public void setLowUtilization(double lowUtilization) {

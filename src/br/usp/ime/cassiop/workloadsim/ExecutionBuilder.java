@@ -22,7 +22,6 @@ import br.usp.ime.cassiop.workloadsim.placement.AlmostWorstFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.BestFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.FirstFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.KhannaPlacement;
-import br.usp.ime.cassiop.workloadsim.placement.PowerOffStrategy;
 import br.usp.ime.cassiop.workloadsim.placement.WorstFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.poweroff.IdleMachinesPowerOffStrategy;
 import br.usp.ime.cassiop.workloadsim.poweroff.LowUtilizationPowerOffStrategy;
@@ -39,7 +38,7 @@ import br.usp.ime.cassiop.workloadsim.workload.TestWorkload;
 
 public class ExecutionBuilder {
 	public enum PlacementType {
-		FIRST_FIT, BEST_FIT, WORST_FIT, KHANNA, ALMOST_WORST_FIT, ALMOST_WORST_FIT_DEC
+		FIRST_FIT_DEC, BEST_FIT_DEC, WORST_FIT_DEC, KHANNA, ALMOST_WORST_FIT, ALMOST_WORST_FIT_DEC
 	};
 
 	public enum StatisticsType {
@@ -216,13 +215,13 @@ public class ExecutionBuilder {
 		}
 
 		switch (placement) {
-		case FIRST_FIT:
+		case FIRST_FIT_DEC:
 			sb.append("ffd_");
 			break;
-		case BEST_FIT:
+		case BEST_FIT_DEC:
 			sb.append("bfd_");
 			break;
-		case WORST_FIT:
+		case WORST_FIT_DEC:
 			sb.append("wfd_");
 			break;
 		case KHANNA:
@@ -332,13 +331,13 @@ public class ExecutionBuilder {
 		}
 
 		switch (placement) {
-		case BEST_FIT:
+		case BEST_FIT_DEC:
 			canonicalPath = canonicalPath.concat("bfd/");
 			break;
-		case FIRST_FIT:
+		case FIRST_FIT_DEC:
 			canonicalPath = canonicalPath.concat("ffd/");
 			break;
-		case WORST_FIT:
+		case WORST_FIT_DEC:
 			canonicalPath = canonicalPath.concat("wfd/");
 			break;
 		case ALMOST_WORST_FIT:
@@ -403,11 +402,11 @@ public class ExecutionBuilder {
 
 	private PlacementModule getPlacementModule(PlacementType placement) {
 		switch (placement) {
-		case BEST_FIT:
+		case BEST_FIT_DEC:
 			return new BestFitDecreasing();
-		case WORST_FIT:
+		case WORST_FIT_DEC:
 			return new WorstFitDecreasing();
-		case FIRST_FIT:
+		case FIRST_FIT_DEC:
 			return new FirstFitDecreasing();
 		case KHANNA:
 			return new KhannaPlacement();

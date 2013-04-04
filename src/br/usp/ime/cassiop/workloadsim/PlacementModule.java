@@ -9,7 +9,6 @@ import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
-import br.usp.ime.cassiop.workloadsim.placement.PowerOffStrategy;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
 public abstract class PlacementModule implements Parametrizable {
