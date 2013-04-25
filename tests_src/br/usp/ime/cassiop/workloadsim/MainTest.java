@@ -142,6 +142,18 @@ public class MainTest {
 		assertFalse(main.environmentsToUse.contains(EnvironmentToUse.GOOGLE));
 		assertTrue(main.environmentsToUse.contains(EnvironmentToUse.TEST));
 	}
+	
+	@Test
+	public void testGetEnvironmentHomogeneousAndGoogleClusterArguments() {
+		String args = "-c google -c homogeneous";
+
+		main.getArguments(args.split(" "));
+
+		assertTrue(main.environmentsToUse
+				.contains(EnvironmentToUse.HOMOGENEOUS));
+		assertTrue(main.environmentsToUse.contains(EnvironmentToUse.GOOGLE));
+		assertFalse(main.environmentsToUse.contains(EnvironmentToUse.TEST));
+	}
 
 	@Test
 	public void testGetEnvironmentDefault() {

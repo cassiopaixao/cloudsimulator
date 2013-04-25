@@ -39,10 +39,12 @@ public class BestFitDecreasingTest {
 		BestFitDecreasing bfd = new BestFitDecreasing();
 		VirtualizationManager virtualizationManager = mock(VirtualizationManager.class);
 		StatisticsModule statisticsModule = mock(StatisticsModule.class);
-
+		PlacementUtils placementUtils = mock(PlacementUtils.class);
+		
 		bfd.setVirtualizationManager(virtualizationManager);
 		bfd.setStatisticsModule(statisticsModule);
-
+		bfd.setPlacementUtils(placementUtils);
+		
 		Server server1 = buildServer(1.0, 1.0);
 		Server server2 = buildServer(0.5, 0.5);
 		Server server3 = buildServer(1.0, 0.5);

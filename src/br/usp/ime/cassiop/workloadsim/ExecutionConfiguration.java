@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.migrationcontrol.NoMigrationControl;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
+import br.usp.ime.cassiop.workloadsim.placement.PlacementStrategy;
+import br.usp.ime.cassiop.workloadsim.placement.PlacementUtils;
 import br.usp.ime.cassiop.workloadsim.poweroff.IdleMachinesPowerOffStrategy;
 import br.usp.ime.cassiop.workloadsim.statistic.AllocationLog;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
@@ -20,8 +22,10 @@ public class ExecutionConfiguration extends Thread {
 	static final Logger logger = LoggerFactory
 			.getLogger(ExecutionConfiguration.class);
 
-	private VirtualizationManagerImpl virtualizationManager = null;
+	private VirtualizationManager virtualizationManager = null;
 	private PlacementModule placementModule = null;
+	private PlacementStrategy placementStrategy = null;
+	private PlacementUtils placementUtils = null;
 	private ForecastingModule forecastingModule = null;
 	private MeasurementModule measurementModule = null;
 	private StatisticsModule statisticsModule = null;
@@ -63,16 +67,18 @@ public class ExecutionConfiguration extends Thread {
 		} catch (Exception e) {
 			try {
 				logger.error(
-						"PlacementModule: {}\nEnvironment: {}\nMigrationController: {}",
-						placementModule.getClass(), environment.getClass(),
+						"PlacementStrategy: {}\nEnvironment: {}\nMigrationController: {}",
+						placementStrategy.getClass(), environment.getClass(),
 						migrationController.getClass());
 			} catch (Exception ex) {
 				logger.error(
-						"PlacementModule: {}\nEnvironment: {}\nMigrationController: {}",
-						placementModule, environment, migrationController);
+						"PlacementStrategy: {}\nEnvironment: {}\nMigrationController: {}",
+						placementStrategy, environment, migrationController);
 			}
 			e.printStackTrace();
 		} finally {
+
+			ExecutionQueue.getInstance().endRun();
 
 			logger.info("Simulation for error {} ~ {} done. File: {}", 1
 					+ meanError - variation, 1 + meanError + variation,
@@ -97,11 +103,14 @@ public class ExecutionConfiguration extends Thread {
 		parameters.put(Constants.PARAMETER_MEASUREMENT_MODULE,
 				measurementModule);
 		parameters.put(Constants.PARAMETER_PLACEMENT_MODULE, placementModule);
+		parameters.put(Constants.PARAMETER_PLACEMENT_STRATEGY,
+				placementStrategy);
 		parameters.put(Constants.PARAMETER_VIRTUALIZATION_MANAGER,
 				virtualizationManager);
 
 		virtualizationManager.setParameters(parameters);
 		placementModule.setParameters(parameters);
+		placementStrategy.setParameters(parameters);
 		forecastingModule.setParameters(parameters);
 		measurementModule.setParameters(parameters);
 		statisticsModule.setParameters(parameters);
@@ -114,7 +123,6 @@ public class ExecutionConfiguration extends Thread {
 		}
 
 		Object workload = parameters.get(Constants.PARAMETER_WORKLOAD);
-
 		if (workload instanceof Workload) {
 			workloadExecution((Workload) workload);
 		}
@@ -147,8 +155,9 @@ public class ExecutionConfiguration extends Thread {
 
 				placementModule.consolidateAll(demand);
 
-				powerOffStrategy.powerOff(virtualizationManager.getActiveServersList());
-				
+				powerOffStrategy.powerOff(virtualizationManager
+						.getActiveServersList());
+
 				if (allocationLog != null) {
 					allocationLog.generateStatistics(currentTime);
 				}
@@ -159,11 +168,7 @@ public class ExecutionConfiguration extends Thread {
 				currentTime += timeInterval;
 			}
 
-			ExecutionQueue.getInstance().endRun();
-
 		} catch (Exception ex) {
-			ExecutionQueue.getInstance().endRun();
-
 			logger.error("Exception thrown at time {}.", currentTime);
 
 			throw ex;
@@ -221,39 +226,16 @@ public class ExecutionConfiguration extends Thread {
 
 	public void setParameter(String name, Object value) {
 		parameters.put(name, value);
-
-		// switch (name) {
-		// case Constants.PARAMETER_VIRTUALIZATION_MANAGER:
-		// setVirtualizationManager((VirtualizationManager) value);
-		// break;
-		// case Constants.PARAMETER_ENVIRONMENT:
-		// setEnvironment((Environment) value);
-		// break;
-		// case Constants.PARAMETER_PLACEMENT_MODULE:
-		// setPlacementModule((PlacementModule) value);
-		// break;
-		// case Constants.PARAMETER_FORECASTING_MODULE:
-		// setForecastingModule((ForecastingModule) value);
-		// break;
-		// case Constants.PARAMETER_STATISTICS_MODULE:
-		// setStatisticsModule((StatisticsModule) value);
-		// break;
-		// case Constants.PARAMETER_MIGRATION_CONTROLLER:
-		// setMigrationController((MigrationController) value);
-		// break;
-		// case Constants.PARAMETER_REACTION_TO_CHANGES:
-		// setReactionToChanges((ReactionToChanges) value);
-		// break;
-		// case Constants.PARAMETER_MEASUREMENT_MODULE:
-		// setMeasurementModule((MeasurementModule) value);
-		// }
-
 		if (name.equals(Constants.PARAMETER_VIRTUALIZATION_MANAGER)) {
 			setVirtualizationManager((VirtualizationManagerImpl) value);
 		} else if (name.equals(Constants.PARAMETER_ENVIRONMENT)) {
 			setEnvironment((Environment) value);
 		} else if (name.equals(Constants.PARAMETER_PLACEMENT_MODULE)) {
 			setPlacementModule((PlacementModule) value);
+		} else if (name.equals(Constants.PARAMETER_PLACEMENT_STRATEGY)) {
+			setPlacementStrategy((PlacementStrategy) value);
+		} else if (name.equals(Constants.PARAMETER_PLACEMENT_UTILS)) {
+			setPlacementUtils((PlacementUtils) value);
 		} else if (name.equals(Constants.PARAMETER_FORECASTING_MODULE)) {
 			setForecastingModule((ForecastingModule) value);
 		} else if (name.equals(Constants.PARAMETER_STATISTICS_MODULE)) {
@@ -287,7 +269,23 @@ public class ExecutionConfiguration extends Thread {
 	public void setPlacementModule(PlacementModule placementModule) {
 		this.placementModule = placementModule;
 	}
+	
+	public PlacementStrategy getPlacementStrategy() {
+		return placementStrategy;
+	}
 
+	public void setPlacementStrategy(PlacementStrategy placementStrategy) {
+		this.placementStrategy = placementStrategy;
+	}
+
+	public PlacementUtils getPlacementUtils() {
+		return placementUtils;
+	}
+
+	public void setPlacementUtils(PlacementUtils placementUtils) {
+		this.placementUtils = placementUtils;
+	}
+	
 	public ForecastingModule getForecastingModule() {
 		return forecastingModule;
 	}

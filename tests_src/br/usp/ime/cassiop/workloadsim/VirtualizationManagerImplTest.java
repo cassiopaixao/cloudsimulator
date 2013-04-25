@@ -551,7 +551,7 @@ public class VirtualizationManagerImplTest {
 
 		try {
 			when(environment.getAvailableMachineTypes()).thenReturn(serverList);
-			when(serverTypeChooser.chooseServerType(serverList, vmDemand))
+			when(serverTypeChooser.chooseServerType(vmDemand, serverList))
 					.thenReturn(server1);
 			when(environment.getMachineOfType(server1)).thenReturn(server2);
 		} catch (Exception e) {
@@ -567,7 +567,7 @@ public class VirtualizationManagerImplTest {
 
 			verify(environment).getAvailableMachineTypes();
 			verify(environment).getMachineOfType(server1);
-			verify(serverTypeChooser).chooseServerType(serverList, vmDemand);
+			verify(serverTypeChooser).chooseServerType(vmDemand, serverList);
 
 		} catch (NoMoreServersAvailableException e) {
 			fail("There are available servers. Shouldn't throw NoMoreServersAvailableException.");
@@ -592,7 +592,7 @@ public class VirtualizationManagerImplTest {
 
 		try {
 			when(environment.getAvailableMachineTypes()).thenReturn(serverList);
-			when(serverTypeChooser.chooseServerType(serverList, vmDemand))
+			when(serverTypeChooser.chooseServerType(vmDemand, serverList))
 					.thenReturn(server1);
 			when(environment.getMachineOfType(server1)).thenReturn(server2);
 		} catch (Exception e) {
@@ -608,7 +608,7 @@ public class VirtualizationManagerImplTest {
 
 			verify(environment).getAvailableMachineTypes();
 			verify(environment).getMachineOfType(server1);
-			verify(serverTypeChooser).chooseServerType(serverList, vmDemand);
+			verify(serverTypeChooser).chooseServerType(vmDemand, serverList);
 
 		} catch (NoMoreServersAvailableException e) {
 			fail("There are available servers. Shouldn't throw NoMoreServersAvailableException.");
@@ -633,7 +633,7 @@ public class VirtualizationManagerImplTest {
 
 		try {
 			when(environment.getAvailableMachineTypes()).thenReturn(serverList);
-			when(serverTypeChooser.chooseServerType(serverList, vmDemand))
+			when(serverTypeChooser.chooseServerType(vmDemand, serverList))
 					.thenReturn(server1);
 			when(environment.getMachineOfType(server1)).thenThrow(
 					new NoMoreServersAvailableException());
@@ -661,7 +661,7 @@ public class VirtualizationManagerImplTest {
 
 		try {
 			when(environment.getAvailableMachineTypes()).thenReturn(serverList);
-			when(serverTypeChooser.chooseServerType(serverList, vmDemand))
+			when(serverTypeChooser.chooseServerType(vmDemand, serverList))
 					.thenReturn(null);
 			when(environment.getMachineOfType(any(Server.class))).thenThrow(
 					new NoMoreServersAvailableException());
@@ -678,7 +678,7 @@ public class VirtualizationManagerImplTest {
 				verify(environment, never())
 						.getMachineOfType(any(Server.class));
 				verify(serverTypeChooser)
-						.chooseServerType(serverList, vmDemand);
+						.chooseServerType(vmDemand, serverList);
 			} catch (UnknownServerException e) {
 				fail("Shouldn't throw any exception.");
 			}
@@ -1021,7 +1021,8 @@ public class VirtualizationManagerImplTest {
 	}
 
 	@Test
-	public void testTurnOffServer() throws UnknownServerException, ServerNotEmptyException {
+	public void testTurnOffServer() throws UnknownServerException,
+			ServerNotEmptyException, NoMoreServersAvailableException {
 		VirtualizationManager virtualizationManager = new VirtualizationManagerImpl();
 		Environment environment = mock(Environment.class);
 		StatisticsModule statisticsModule = mock(StatisticsModule.class);
@@ -1031,7 +1032,7 @@ public class VirtualizationManagerImplTest {
 
 		virtualizationManager.setEnvironment(environment);
 		virtualizationManager.setStatisticsModule(statisticsModule);
-		
+
 		try {
 			when(environment.getMachineOfType(server)).thenReturn(server);
 			when(server.getVirtualMachines()).thenReturn(serverVms);
@@ -1046,16 +1047,17 @@ public class VirtualizationManagerImplTest {
 			fail("Mocked classes should return valid objects. Exception: "
 					+ e.getMessage());
 		}
-		
+
 		virtualizationManager.turnOffServer(server);
-		
+
 		verify(server).getVirtualMachines();
 		verify(environment).turnOffMachineOfType(server);
 		assertTrue(virtualizationManager.getActiveServersList().isEmpty());
 	}
-	
+
 	@Test(expected = ServerNotEmptyException.class)
-	public void testTurnOffANonemptyServer() throws UnknownServerException, ServerNotEmptyException {
+	public void testTurnOffANonemptyServer() throws UnknownServerException,
+			ServerNotEmptyException, NoMoreServersAvailableException {
 		VirtualizationManager virtualizationManager = new VirtualizationManagerImpl();
 		Environment environment = mock(Environment.class);
 		Server server = mock(Server.class);
@@ -1083,21 +1085,23 @@ public class VirtualizationManagerImplTest {
 
 		virtualizationManager.turnOffServer(server);
 	}
-	
+
 	@Test(expected = UnknownServerException.class)
-	public void testTurnOffAnUnknownServer() throws UnknownServerException, ServerNotEmptyException {
+	public void testTurnOffAnUnknownServer() throws UnknownServerException,
+			ServerNotEmptyException, NoMoreServersAvailableException {
 		VirtualizationManager virtualizationManager = new VirtualizationManagerImpl();
 		Server server = mock(Server.class);
-		
+
 		when(server.getName()).thenReturn("1");
 
 		virtualizationManager.turnOffServer(server);
 	}
 
 	@Test(expected = UnknownServerException.class)
-	public void testTurnOffANullServer() throws UnknownServerException, ServerNotEmptyException {
+	public void testTurnOffANullServer() throws UnknownServerException,
+			ServerNotEmptyException, NoMoreServersAvailableException {
 		VirtualizationManager virtualizationManager = new VirtualizationManagerImpl();
-		
+
 		virtualizationManager.turnOffServer(null);
 	}
 

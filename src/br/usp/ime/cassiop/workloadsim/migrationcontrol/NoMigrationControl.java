@@ -32,15 +32,12 @@ public class NoMigrationControl extends MigrationController {
 
 		List<VirtualMachine> shouldDeallocate = new LinkedList<VirtualMachine>();
 
-		int newVirtualMachines = demand.size();
-
 		// for each vm already allocated
 		for (VirtualMachine vm : virtualizationManager
 				.getActiveVirtualMachines().values()) {
 			shouldDeallocate.add(vm);
 			// if it is in the updated demand
 			if (isInDemand.containsKey(vm.getName())) {
-				newVirtualMachines--;
 				// set info about last server
 				isInDemand.get(vm.getName()).setLastServer(
 						vm.getCurrentServer());
@@ -67,9 +64,7 @@ public class NoMigrationControl extends MigrationController {
 
 		statisticsModule.setStatisticValue(
 				Constants.STATISTIC_VIRTUAL_MACHINES_TO_REALLOCATE,
-				demand.size() - newVirtualMachines);
-
-		virtualizationManager.clear();
+				shouldDeallocate.size());
 
 		return demand;
 	}

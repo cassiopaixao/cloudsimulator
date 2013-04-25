@@ -21,11 +21,12 @@ public abstract class Environment implements Parametrizable {
 
 	public Environment() {
 		environmentStatus = new HashMap<Server, MachineStatus>();
+		initialize();
 	}
 
-	public Server getMachineOfType(Server pm) throws UnknownServerException,
+	public Server getMachineOfType(Server server) throws UnknownServerException,
 			NoMoreServersAvailableException {
-		MachineStatus status = environmentStatus.get(pm);
+		MachineStatus status = environmentStatus.get(server);
 		if (status == null) {
 			throw new UnknownServerException(
 					"There is no Physical Machines of this type in the environment.");
@@ -33,21 +34,18 @@ public abstract class Environment implements Parametrizable {
 
 		status.useOne();
 
-		Server newPm = new Server();
-		newPm.setCapacity(ResourceType.CPU, pm.getCapacity(ResourceType.CPU));
-		newPm.setCapacity(ResourceType.MEMORY,
-				pm.getCapacity(ResourceType.MEMORY));
-
-		return newPm;
+		Server newServer = server.clone();
+		
+		return newServer;
 	}
 
 	public List<Server> getAvailableMachineTypes() {
 		List<Server> availableMachines = new ArrayList<Server>();
 
-		for (Server pm : environmentStatus.keySet()) {
-			if (environmentStatus.get(pm).getAvailable() > environmentStatus
-					.get(pm).getUsed()) {
-				availableMachines.add(pm);
+		for (Server server : environmentStatus.keySet()) {
+			if (environmentStatus.get(server).getAvailable() > environmentStatus
+					.get(server).getUsed()) {
+				availableMachines.add(server);
 			}
 		}
 
@@ -71,7 +69,8 @@ public abstract class Environment implements Parametrizable {
 		}
 	}
 
-	public void turnOffMachineOfType(Server server) {
+	public void turnOffMachineOfType(Server server)
+			throws NoMoreServersAvailableException {
 		for (Server sv : environmentStatus.keySet()) {
 			if (server.getType().equals(sv.getType())) {
 				environmentStatus.get(sv).turnOffOne();

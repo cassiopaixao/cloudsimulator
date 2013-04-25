@@ -18,7 +18,7 @@ public abstract class StatisticsModule implements Parametrizable {
 	protected File statisticsFile = null;
 	protected static final Charset charset = Charset.forName("UTF-8");
 
-	protected Map<String, Number> statistics = null;
+	protected Map<String, Object> statistics = null;
 
 	public File getStatisticsFile() {
 		return statisticsFile;
@@ -56,7 +56,7 @@ public abstract class StatisticsModule implements Parametrizable {
 	public abstract void generateStatistics(long currentTime) throws Exception;
 
 	public void initialize() throws Exception {
-		statistics = new HashMap<String, Number>();
+		statistics = new HashMap<String, Object>();
 	}
 
 	public void setStatisticValue(String name, int value) {
@@ -67,10 +67,16 @@ public abstract class StatisticsModule implements Parametrizable {
 		statistics.put(name, new Double(value));
 	}
 
+	public void setStatisticValue(String name, String value) {
+		statistics.put(name, value);
+	}
+
 	public void addToStatisticValue(String name, double value) {
 		if (statistics.containsKey(name)) {
-			statistics.put(name, new Double(statistics.get(name).doubleValue()
-					+ value));
+			statistics.put(
+					name,
+					new Double(Double.parseDouble(statistics.get(name)
+							.toString()) + value));
 		} else {
 			setStatisticValue(name, value);
 		}
@@ -78,8 +84,10 @@ public abstract class StatisticsModule implements Parametrizable {
 
 	public void addToStatisticValue(String name, int value) {
 		if (statistics.containsKey(name)) {
-			statistics.put(name, new Integer(statistics.get(name).intValue()
-					+ value));
+			statistics.put(
+					name,
+					new Integer(Integer.parseInt(statistics.get(name)
+							.toString()) + value));
 		} else {
 			setStatisticValue(name, value);
 		}
@@ -89,7 +97,7 @@ public abstract class StatisticsModule implements Parametrizable {
 		for (String key : statistics.keySet()) {
 			if (statistics.get(key) instanceof Double) {
 				statistics.put(key, new Double(0));
-			} else {
+			} else if (statistics.get(key) instanceof Integer) {
 				statistics.put(key, new Integer(0));
 			}
 		}

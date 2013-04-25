@@ -2,7 +2,6 @@ package br.usp.ime.cassiop.workloadsim.poweroff;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import br.usp.ime.cassiop.workloadsim.PowerOffStrategy;
 import br.usp.ime.cassiop.workloadsim.exceptions.DependencyNotSetException;
 import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
+import br.usp.ime.cassiop.workloadsim.exceptions.NoMoreServersAvailableException;
 import br.usp.ime.cassiop.workloadsim.exceptions.ServerNotEmptyException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
@@ -59,14 +59,12 @@ public class LowUtilizationPowerOffStrategy extends PowerOffStrategy {
 		for (Server server : servers) {
 			if (MathUtils.lessThanOrEquals(server.getResourceUtilization(),
 					lowUtilization)) {
-				List<VirtualMachine> shouldMigrate = new LinkedList<VirtualMachine>();
-				List<VirtualMachine> vmsOnServer = new ArrayList<VirtualMachine>(
+				List<VirtualMachine> shouldMigrate = new ArrayList<VirtualMachine>(
 						server.getVirtualMachines());
 
-				for (VirtualMachine vm : vmsOnServer) {
+				for (VirtualMachine vm : shouldMigrate) {
 					try {
 						virtualizationManager.deallocate(vm);
-						shouldMigrate.add(vm);
 					} catch (UnknownVirtualMachineException e) {
 						logger.error(
 								"Tryed to deallocate an unknown virtual machine: {}",
@@ -80,7 +78,7 @@ public class LowUtilizationPowerOffStrategy extends PowerOffStrategy {
 
 				for (VirtualMachine vm : shouldMigrate) {
 					try {
-							placementModule.allocate(vm, servers);
+						placementModule.allocate(vm, servers);
 					} catch (UnknownVirtualMachineException e) {
 						logger.error(
 								"Tryed to allocate an unknown virtual machine: {}",
@@ -101,9 +99,14 @@ public class LowUtilizationPowerOffStrategy extends PowerOffStrategy {
 					virtualizationManager.turnOffServer(server);
 					servers_turned_off++;
 				} catch (ServerNotEmptyException e) {
-					logger.error("Tryed to turn off a nonempty server.");
+					logger.error("Tryed to turn off a nonempty server: {}",
+							server);
 				} catch (UnknownServerException e) {
 					logger.error("Tryed to turn off an unknown server: {}",
+							server);
+				} catch (NoMoreServersAvailableException e) {
+					logger.error(
+							"Tryed to turn off server that is not active: {}",
 							server);
 				}
 			}
@@ -119,7 +122,7 @@ public class LowUtilizationPowerOffStrategy extends PowerOffStrategy {
 		}
 		if (statisticsModule == null) {
 			throw new DependencyNotSetException(
-					"VirtualizationManager is not set.");
+					"StatisticsModule is not set.");
 		}
 		if (virtualizationManager == null) {
 			throw new DependencyNotSetException(

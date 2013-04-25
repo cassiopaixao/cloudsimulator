@@ -41,6 +41,20 @@ public class Server extends Machine {
 				/ (resourceCpu * resourceMem);
 	}
 
+	public Server clone() {
+		Server s = new Server();
+
+		s.resourceCpu = this.resourceCpu;
+		s.resourceMem = this.resourceMem;
+
+		s.kneePerformanceLossCpu = this.kneePerformanceLossCpu;
+		s.kneePerformanceLossMem = this.kneePerformanceLossMem;
+
+		s.updateFreeResources();
+		
+		return s;
+	}
+
 	public Server() {
 		super();
 		virtualMachines = new ArrayList<VirtualMachine>();
@@ -60,7 +74,7 @@ public class Server extends Machine {
 		if (newVm.getCurrentServer() == this) {
 			return;
 		}
-		
+
 		virtualMachines.add(newVm);
 		newVm.setCurrentServer(this);
 

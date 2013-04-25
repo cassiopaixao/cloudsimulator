@@ -9,7 +9,7 @@ import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 
 public class PlacementUtils {
-	static double leavingResource(Server server, VirtualMachine vm) {
+	public double leavingResource(Server server, VirtualMachine vm) {
 		double leavingCpu, leavingMem;
 		leavingCpu = server.getFreeResource(ResourceType.CPU)
 				- vm.getDemand(ResourceType.CPU);
@@ -19,7 +19,7 @@ public class PlacementUtils {
 		return leavingCpu + leavingMem;
 	}
 
-	static Server lessLossOfPerformanceMachine(List<Server> servers,
+	public Server lessLossOfPerformanceMachine(List<Server> servers,
 			VirtualMachine vmDemand) {
 		Server lessLossOfPerformanceMachine = null;
 		double lessLossOfPerformance = Double.MAX_VALUE;
@@ -33,7 +33,7 @@ public class PlacementUtils {
 		return lessLossOfPerformanceMachine;
 	}
 
-	static double lossOfPerformance(Server server, VirtualMachine vm) {
+	public double lossOfPerformance(Server server, VirtualMachine vm) {
 		double leavingCpu, leavingMem;
 		double sum = 0;
 		leavingCpu = server.getFreeResource(ResourceType.CPU)
@@ -47,7 +47,7 @@ public class PlacementUtils {
 		return sum;
 	}
 
-	public static Server lessLossEmptyServer(Collection<Server> servers,
+	public Server lessLossEmptyServer(Collection<Server> servers,
 			VirtualMachine vm) {
 		List<Server> emptyServers = new LinkedList<Server>();
 		for (Server server : servers) {
@@ -55,8 +55,8 @@ public class PlacementUtils {
 				emptyServers.add(server);
 			}
 		}
-		
+
 		return lessLossOfPerformanceMachine(emptyServers, vm);
-		
+
 	}
 }

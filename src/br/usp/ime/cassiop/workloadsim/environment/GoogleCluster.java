@@ -4,11 +4,6 @@ import br.usp.ime.cassiop.workloadsim.Environment;
 
 public class GoogleCluster extends Environment {
 
-	public GoogleCluster() {
-		super();
-		initialize();
-	}
-
 	protected void initialize() {
 		clear(true);
 

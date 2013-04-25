@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import br.usp.ime.cassiop.workloadsim.Measurement;
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
 import br.usp.ime.cassiop.workloadsim.environment.MachineStatus;
+import br.usp.ime.cassiop.workloadsim.exceptions.ForcedEndException;
 import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.exceptions.ServerOverloadedException;
 import br.usp.ime.cassiop.workloadsim.model.ResourceType;
@@ -44,6 +45,10 @@ public class MigrationStatistics extends StatisticsModule {
 
 	private List<Server> machineTypes = null;
 
+	private Map<String, Object> parameters = null;
+	
+	private File headerFile = null;
+
 	@Override
 	public void setParameters(Map<String, Object> parameters)
 			throws InvalidParameterException {
@@ -59,10 +64,119 @@ public class MigrationStatistics extends StatisticsModule {
 			logger.debug("Parameter {} is not set. Using default {}",
 					Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER, "");
 		}
+		o = parameters.get(Constants.PARAMETER_STATISTICS_HEADER_FILE);
+		if (o instanceof File) {
+			setHeaderFile((File) o);
+		}
+
+		this.parameters = parameters;
+	}
+
+	private void setHeaderFile(File headerFile) {
+		this.headerFile = headerFile;
+	}
+	
+	private void fillExecutionParameters(Map<String, Object> parameters) {
+
+		try {
+			statistics
+					.put(Constants.STATISTIC_PARAM_EXECUTION_IDENTIFIER,
+							parameters
+									.get(Constants.PARAMETER_STATISTICS_EXECUTION_IDENTIFIER)
+									.toString());
+		} catch (NullPointerException e) {
+			statistics.put(Constants.STATISTIC_PARAM_EXECUTION_IDENTIFIER, "");
+		}
+		try {
+			statistics.put(Constants.STATISTIC_PARAM_WORKLOAD,
+					parameters.get(Constants.PARAMETER_WORKLOAD).getClass()
+							.getSimpleName());
+		} catch (NullPointerException e) {
+			statistics.put(Constants.STATISTIC_PARAM_WORKLOAD, "");
+		}
+		try {
+			statistics.put(Constants.STATISTIC_PARAM_ENVIRONMENT, parameters
+					.get(Constants.PARAMETER_ENVIRONMENT).getClass()
+					.getSimpleName());
+		} catch (NullPointerException e) {
+			statistics.put(Constants.STATISTIC_PARAM_ENVIRONMENT, "");
+		}
+		try {
+			statistics.put(Constants.STATISTIC_PARAM_ENVIRONMENT_MULTIPLIER,
+					parameters.get(Constants.PARAMETER_ENVIRONMENT_MULTIPLIER)
+							.toString());
+		} catch (NullPointerException e) {
+			statistics
+					.put(Constants.STATISTIC_PARAM_ENVIRONMENT_MULTIPLIER, "");
+		}
+		try {
+			statistics.put(Constants.STATISTIC_PARAM_MIGRATION_CONTROL,
+					parameters.get(Constants.PARAMETER_MIGRATION_CONTROLLER)
+							.getClass().getSimpleName());
+		} catch (NullPointerException e) {
+			statistics.put(Constants.STATISTIC_PARAM_MIGRATION_CONTROL, "");
+		}
+		try {
+			statistics.put(Constants.STATISTIC_PARAM_PLACEMENT,
+					parameters.get(Constants.PARAMETER_PLACEMENT_MODULE)
+							.getClass().getSimpleName());
+		} catch (NullPointerException e) {
+			statistics.put(Constants.STATISTIC_PARAM_PLACEMENT, "");
+		}
+		try {
+			statistics.put(Constants.STATISTIC_PARAM_FORECASTING_STRATEGY,
+					parameters.get(Constants.PARAMETER_FORECASTING_MODULE)
+							.getClass().getSimpleName());
+		} catch (NullPointerException e) {
+			statistics.put(Constants.STATISTIC_PARAM_FORECASTING_STRATEGY, "");
+		}
+		try {
+			statistics.put(Constants.STATISTIC_PARAM_FORECASTING_ERROR,
+					parameters.get(Constants.PARAMETER_FORECASTING_MEAN_ERROR)
+							.toString());
+		} catch (NullPointerException e) {
+			statistics.put(Constants.STATISTIC_PARAM_FORECASTING_ERROR, "");
+		}
+		try {
+			statistics.put(Constants.STATISTIC_PARAM_FORECASTING_VARIATION,
+					parameters.get(Constants.PARAMETER_FORECASTING_VARIATION)
+							.toString());
+		} catch (NullPointerException e) {
+			statistics.put(Constants.STATISTIC_PARAM_FORECASTING_VARIATION, "");
+		}
+		try {
+			statistics.put(
+					Constants.STATISTIC_PARAM_FORECASTING_MEASUREMENT_WINDOW,
+					parameters.get(
+							Constants.PARAMETER_FORECASTING_MEASUREMENT_WINDOW)
+							.toString());
+		} catch (NullPointerException e) {
+			statistics.put(
+					Constants.STATISTIC_PARAM_FORECASTING_MEASUREMENT_WINDOW,
+					"");
+		}
+		try {
+			statistics.put(Constants.STATISTIC_PARAM_POWER_OFF_STRATEGY,
+					parameters.get(Constants.PARAMETER_POWER_OFF_STRATEGY)
+							.getClass().getSimpleName());
+		} catch (NullPointerException e) {
+			statistics.put(Constants.STATISTIC_PARAM_POWER_OFF_STRATEGY, "");
+		}
+		try {
+			statistics.put(
+					Constants.STATISTIC_PARAM_LOW_UTILIZATION_VALUE,
+					parameters.get(
+							Constants.PARAMETER_POWER_OFF_LOW_UTILIZATION)
+							.toString());
+		} catch (NullPointerException e) {
+			statistics.put(Constants.STATISTIC_PARAM_LOW_UTILIZATION_VALUE, "");
+		}
 	}
 
 	public void initialize() throws Exception {
 		super.initialize();
+
+		fillExecutionParameters(parameters);
 
 		if (statisticsFile == null) {
 			statisticsFile = new File("res/statistics.csv");
@@ -73,6 +187,20 @@ public class MigrationStatistics extends StatisticsModule {
 		}
 
 		statisticsFields = new ArrayList<String>();
+		statisticsFields.add(Constants.STATISTIC_PARAM_EXECUTION_IDENTIFIER);
+		statisticsFields.add(Constants.STATISTIC_PARAM_WORKLOAD);
+		statisticsFields.add(Constants.STATISTIC_PARAM_ENVIRONMENT);
+		statisticsFields.add(Constants.STATISTIC_PARAM_ENVIRONMENT_MULTIPLIER);
+		statisticsFields.add(Constants.STATISTIC_PARAM_MIGRATION_CONTROL);
+		statisticsFields.add(Constants.STATISTIC_PARAM_PLACEMENT);
+		statisticsFields.add(Constants.STATISTIC_PARAM_FORECASTING_STRATEGY);
+		statisticsFields.add(Constants.STATISTIC_PARAM_FORECASTING_ERROR);
+		statisticsFields.add(Constants.STATISTIC_PARAM_FORECASTING_VARIATION);
+		statisticsFields
+				.add(Constants.STATISTIC_PARAM_FORECASTING_MEASUREMENT_WINDOW);
+		statisticsFields.add(Constants.STATISTIC_PARAM_POWER_OFF_STRATEGY);
+		statisticsFields.add(Constants.STATISTIC_PARAM_LOW_UTILIZATION_VALUE);
+
 		statisticsFields.add(Constants.STATISTIC_SERVERS);
 		statisticsFields.add(Constants.STATISTIC_USED_SERVERS);
 		statisticsFields.add(Constants.STATISTIC_SERVERS_TURNED_OFF);
@@ -103,29 +231,42 @@ public class MigrationStatistics extends StatisticsModule {
 		Collections.reverse(machineTypes);
 
 		for (String field : statisticsFields) {
-			setStatisticValue(field, 0);
+			if (!statistics.containsKey(field)) {
+				setStatisticValue(field, 0);
+			}
 		}
+		
+		if (headerFile != null) {
+			printHeader(headerFile, environmentStatus);
+			throw new ForcedEndException("Statistics header file was printed.");
+		}
+	}
+
+	public void printHeader(File headerFile, Map<Server, MachineStatus> environmentStatus) {
 
 		StringBuilder sb = new StringBuilder();
-		sb.append(executionIdentifier).append(DELIMITER);
+		sb.append("time").append(DELIMITER);
 		for (String field : statisticsFields) {
 			sb.append(field).append(DELIMITER);
 		}
 
 		for (Server pm : machineTypes) {
 			sb.append(
-					String.format("%d(%.2f,%.2f)", environmentStatus.get(pm)
+					String.format("%d(%.2f~%.2f)", environmentStatus.get(pm)
 							.getAvailable(), pm.getCapacity(ResourceType.CPU),
 							pm.getCapacity(ResourceType.MEMORY))).append(
 					DELIMITER);
 		}
 
+		// removes last delimiter
+		sb.setLength(sb.length()-1);
+		
 		// try (BufferedWriter writer = Files.newBufferedWriter(statisticsFile,
 		// charset, StandardOpenOption.WRITE,
 		// StandardOpenOption.CREATE_NEW)) {
 		try {
 			BufferedWriter writer = new BufferedWriter(new FileWriter(
-					statisticsFile));
+					headerFile));
 
 			writer.write(sb.toString());
 
@@ -251,6 +392,9 @@ public class MigrationStatistics extends StatisticsModule {
 		}
 
 		clearStatistics();
+
+		// removes last delimiter
+		sb.setLength(sb.length()-1);
 
 		// try (BufferedWriter writer = Files.newBufferedWriter(statisticsFile,
 		// charset, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {

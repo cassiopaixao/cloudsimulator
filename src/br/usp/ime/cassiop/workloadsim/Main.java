@@ -28,6 +28,8 @@ public class Main {
 	List<Double> errorArgs = null;
 
 	boolean shouldLog = false;
+
+	boolean shouldPrintHeader = false;
 	
 	int maxThreads = 1;
 
@@ -52,9 +54,9 @@ public class Main {
 	}
 
 	void prepareExecutions() {
-		
+
 		ExecutionQueue.getInstance().setMaxExecutions(maxThreads);
-		
+
 		for (EnvironmentToUse environmentToUse : environmentsToUse) {
 
 			for (Double errorArg : errorArgs) {
@@ -77,12 +79,14 @@ public class Main {
 
 							executionBuilder.setShouldLog(shouldLog);
 
+							executionBuilder.setShouldPrintHeader(shouldPrintHeader);
+
 							executionBuilder.setEnvironment(environmentToUse);
 
 							executionBuilder
 									.setForecastingModule(ForecasterToUse.WORKLOAD_ERROR_INJECTOR);
 
-							executionBuilder.setPlacementModule(placement);
+							executionBuilder.setPlacementStrategy(placement);
 
 							executionBuilder
 									.setStatisticsModule(StatisticsType.MIGRATION_STATISTICS);
@@ -178,6 +182,9 @@ public class Main {
 			// log
 			parser.accepts("l", "log path");
 
+			// header
+			parser.accepts("h", "print statistics' header file");
+
 			// number of threads
 			OptionSpec<Integer> numberOfThreadsArg = parser
 					.accepts("t", "maximum threads").withRequiredArg()
@@ -267,13 +274,17 @@ public class Main {
 				shouldLog = true;
 			}
 
+			// header -- optional
+			if (options.has("h")) {
+				shouldPrintHeader = true;
+			}
+
 			// max number of threads -- optional
 			if (options.has(numberOfThreadsArg)) {
 				Integer value = numberOfThreadsArg.value(options);
 
 				if (value.intValue() < 1) {
-					throw new Exception(
-							"Couldn't execute with at least 1 thread");
+					throw new Exception("Should execute with at least 1 thread");
 				}
 
 				maxThreads = value.intValue();

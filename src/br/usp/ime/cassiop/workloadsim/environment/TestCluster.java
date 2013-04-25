@@ -4,11 +4,6 @@ import br.usp.ime.cassiop.workloadsim.Environment;
 
 public class TestCluster extends Environment {
 
-	public TestCluster() {
-		super();
-		initialize();
-	}
-
 	protected void initialize() {
 		clear(true);
 		// NumberOfMachines CPUs Memory

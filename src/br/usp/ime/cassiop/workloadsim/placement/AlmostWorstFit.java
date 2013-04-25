@@ -1,53 +1,23 @@
 package br.usp.ime.cassiop.workloadsim.placement;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import br.usp.ime.cassiop.workloadsim.PlacementModule;
-import br.usp.ime.cassiop.workloadsim.exceptions.DependencyNotSetException;
-import br.usp.ime.cassiop.workloadsim.exceptions.NoMoreServersAvailableException;
-import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
-import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
-import br.usp.ime.cassiop.workloadsim.util.Constants;
 
-public class AlmostWorstFit extends PlacementModule {
+public class AlmostWorstFit extends PlacementStrategy {
 
-	private List<Server> servers = null;
-
-	final Logger logger = LoggerFactory.getLogger(AlmostWorstFit.class);
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see br.ime.usp.cassiop.workloadsim.PlacementModule#consolidateAll()
-	 */
-	public void consolidateAll(List<VirtualMachine> demand)
-			throws DependencyNotSetException {
-		verifyDependencies(demand);
-
-		servers = new ArrayList<Server>(
-				virtualizationManager.getActiveServersList());
-
-		for (VirtualMachine vm : demand) {
-			try {
-				allocate(vm, servers);
-			} catch (UnknownVirtualMachineException e) {
-				logger.error("UnknownVirtualMachineException thrown. VM: {}",
-						vm);
-			} catch (UnknownServerException e) {
-				logger.error("UnknownServerException thrown. {}",
-						e.getMessage());
-			}
-		}
+	@Override
+	public void orderServers(List<Server> servers) {
 	}
 
-	public void allocate(VirtualMachine vm, List<Server> servers)
-			throws UnknownVirtualMachineException, UnknownServerException {
+	@Override
+	public void orderDemand(List<VirtualMachine> demand) {
+	}
+
+	@Override
+	public Server selectDestinationServer(VirtualMachine vm,
+			List<Server> servers) {
 		Server destinationServer = null;
 
 		Server worstFitServer = null;
@@ -61,7 +31,7 @@ public class AlmostWorstFit extends PlacementModule {
 		for (Server server : servers) {
 			if (server.canHost(vm)) {
 				// stores the almost worst-fit allocation
-				leavingResource = PlacementUtils.leavingResource(server, vm);
+				leavingResource = placementUtils.leavingResource(server, vm);
 
 				if (leavingResource > worstFitLeavingResource) {
 					almostWorstFitServer = worstFitServer;
@@ -80,34 +50,56 @@ public class AlmostWorstFit extends PlacementModule {
 		destinationServer = (almostWorstFitServer != null) ? almostWorstFitServer
 				: worstFitServer;
 
-		if (destinationServer == null) {
-			try {
-				destinationServer = virtualizationManager
-						.getNextInactiveServer(vm,
-								new AlmostWorstFitTypeChooser());
+		return destinationServer;
 
-				if (destinationServer != null) {
-					servers.add(destinationServer);
+	}
+
+	@Override
+	public Server chooseServerType(VirtualMachine vmDemand,
+			List<Server> machineTypes) {
+		Server worstFitMachine = null;
+		double worstFitLeavingResource = -1.0;
+
+		Server almostWorstFitMachine = null;
+		double almostWorstFitLeavingResource = -1.0;
+
+		double leavingResource;
+
+		for (Server server : machineTypes) {
+			if (server.canHost(vmDemand)) {
+				leavingResource = placementUtils.leavingResource(server,
+						vmDemand);
+				if (leavingResource > worstFitLeavingResource) {
+					almostWorstFitMachine = worstFitMachine;
+					almostWorstFitLeavingResource = worstFitLeavingResource;
+
+					worstFitMachine = server;
+					worstFitLeavingResource = leavingResource;
+				} else if (leavingResource > almostWorstFitLeavingResource) {
+					almostWorstFitMachine = server;
+					almostWorstFitLeavingResource = leavingResource;
 				}
-			} catch (NoMoreServersAvailableException e) {
 			}
 		}
 
-		if (destinationServer == null) {
-			destinationServer = PlacementUtils.lessLossEmptyServer(servers, vm);
+		if (almostWorstFitMachine == null) {
+			if (worstFitMachine != null) {
+				almostWorstFitMachine = worstFitMachine;
+			} else {
+//				logger.debug("No inactive physical machine can satisfy the virtual machine's demand. Activating the physical machine with lowest loss of performance.");
+
+				Server lessLossOfPerformanceMachine = placementUtils
+						.lessLossOfPerformanceMachine(machineTypes, vmDemand);
+
+				if (lessLossOfPerformanceMachine == null) {
+//					logger.debug("There is no inactive physical machine. Need to overload one.");
+					return null;
+				}
+
+				almostWorstFitMachine = lessLossOfPerformanceMachine;
+			}
 		}
-
-		if (destinationServer == null) {
-			logger.info("No server could allocate the virtual machine: {}.",
-					vm.toString());
-			statisticsModule.addToStatisticValue(
-					Constants.STATISTIC_VIRTUAL_MACHINES_NOT_ALLOCATED, 1);
-
-		}
-
-		if (destinationServer != null) {
-			virtualizationManager.setVmToServer(vm, destinationServer);
-		}
-
+		return almostWorstFitMachine;
 	}
+
 }

@@ -17,11 +17,6 @@ public class MachineStatus {
 		used = 0;
 	}
 
-	public MachineStatus(int available, int used) {
-		this.available = available;
-		this.used = used;
-	}
-
 	public int getAvailable() {
 		return available;
 	}
@@ -42,10 +37,9 @@ public class MachineStatus {
 		used++;
 	}
 
-	public void turnOffOne() {
+	public void turnOffOne() throws NoMoreServersAvailableException {
 		if (used == 0) {
-			logger.error("Tryed to turn off a machine that wasn't being used.");
-			return;
+			throw new NoMoreServersAvailableException();
 		}
 		used--;
 	}

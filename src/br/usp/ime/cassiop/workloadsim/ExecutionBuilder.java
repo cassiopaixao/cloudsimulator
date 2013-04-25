@@ -22,6 +22,8 @@ import br.usp.ime.cassiop.workloadsim.placement.AlmostWorstFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.BestFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.FirstFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.KhannaPlacement;
+import br.usp.ime.cassiop.workloadsim.placement.PlacementStrategy;
+import br.usp.ime.cassiop.workloadsim.placement.PlacementUtils;
 import br.usp.ime.cassiop.workloadsim.placement.WorstFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.poweroff.IdleMachinesPowerOffStrategy;
 import br.usp.ime.cassiop.workloadsim.poweroff.LowUtilizationPowerOffStrategy;
@@ -78,6 +80,7 @@ public class ExecutionBuilder {
 	private MigrationControlToUse migration = null;
 	private PowerOffStrategyToUse powerOffStrategy = null;
 	private boolean shouldLog = false;
+	private boolean shouldPrintHeader = false;
 
 	public void setMigrationController(MigrationControlToUse migration) {
 		executionConfiguration.setParameter(
@@ -93,10 +96,19 @@ public class ExecutionBuilder {
 
 	public ExecutionBuilder() {
 		executionConfiguration = new ExecutionConfiguration();
+		setDefaultValues();
+	}
 
-		executionConfiguration
-				.setVirtualizationManager(new VirtualizationManagerImpl());
+	private void setDefaultValues() {
+		executionConfiguration.setParameter(
+				Constants.PARAMETER_VIRTUALIZATION_MANAGER,
+				new VirtualizationManagerImpl());
 
+		executionConfiguration.setParameter(
+				Constants.PARAMETER_PLACEMENT_MODULE, new PlacementModule());
+
+		executionConfiguration.setParameter(
+				Constants.PARAMETER_PLACEMENT_UTILS, new PlacementUtils());
 	}
 
 	public ExecutionConfiguration build() throws IOException {
@@ -106,6 +118,12 @@ public class ExecutionBuilder {
 		if (shouldLog) {
 			executionConfiguration.setParameter(Constants.PARAMETER_LOG_PATH,
 					buildLogPath());
+		}
+
+		if (shouldPrintHeader) {
+			executionConfiguration.setParameter(
+					Constants.PARAMETER_STATISTICS_HEADER_FILE,
+					buildHeaderFile());
 		}
 
 		return executionConfiguration;
@@ -134,10 +152,10 @@ public class ExecutionBuilder {
 				virtualizationManager);
 	}
 
-	public void setPlacementModule(PlacementType placement) {
+	public void setPlacementStrategy(PlacementType placement) {
 		executionConfiguration.setParameter(
-				Constants.PARAMETER_PLACEMENT_MODULE,
-				getPlacementModule(placement));
+				Constants.PARAMETER_PLACEMENT_STRATEGY,
+				getPlacementStrategy(placement));
 		this.placement = placement;
 	}
 
@@ -171,6 +189,29 @@ public class ExecutionBuilder {
 
 	public void setShouldLog(boolean shouldLog) {
 		this.shouldLog = shouldLog;
+	}
+
+	public void setShouldPrintHeader(boolean shouldPrintHeader) {
+		this.shouldPrintHeader = shouldPrintHeader;
+	}
+
+	private File buildHeaderFile() {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("res/header_");
+		switch (environment) {
+		case HOMOGENEOUS:
+			sb.append("homogeneous");
+			break;
+		case GOOGLE:
+			sb.append("googlecluster");
+			break;
+		case TEST:
+			sb.append("test");
+		}
+		sb.append(".csv");
+
+		return new File(sb.toString());
 	}
 
 	private File buildStatisticsFilename() {
@@ -400,7 +441,7 @@ public class ExecutionBuilder {
 		return null;
 	}
 
-	private PlacementModule getPlacementModule(PlacementType placement) {
+	private PlacementStrategy getPlacementStrategy(PlacementType placement) {
 		switch (placement) {
 		case BEST_FIT_DEC:
 			return new BestFitDecreasing();

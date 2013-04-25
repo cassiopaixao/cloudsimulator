@@ -110,7 +110,7 @@ public class VirtualizationManagerImpl implements Parametrizable,
 		}
 
 		if (!server.canHost(vm)) {
-			logger.info(
+			logger.debug(
 					"Server {} could be overloaded. Virtual machine {}'s demands extrapolates the pm resources' capacities",
 					server.getName(), vm.getName());
 		}
@@ -161,8 +161,8 @@ public class VirtualizationManagerImpl implements Parametrizable,
 			ServerTypeChooser pmTypeChooser)
 			throws NoMoreServersAvailableException {
 
-		Server selectedMachine = pmTypeChooser.chooseServerType(
-				environment.getAvailableMachineTypes(), vmDemand);
+		Server selectedMachine = pmTypeChooser.chooseServerType(vmDemand,
+				environment.getAvailableMachineTypes());
 
 		if (selectedMachine == null) {
 			throw new NoMoreServersAvailableException();
@@ -201,9 +201,11 @@ public class VirtualizationManagerImpl implements Parametrizable,
 	 */
 	@Override
 	public void clear() {
-		for (Server pm : serverMap.values()) {
-			pm.clear();
+		for (Server server : serverMap.values()) {
+			server.clear();
 		}
+		vmMap.clear();
+		serverMap.clear();
 		environment.clear();
 	}
 
@@ -316,7 +318,7 @@ public class VirtualizationManagerImpl implements Parametrizable,
 	 */
 	@Override
 	public void turnOffServer(Server server) throws UnknownServerException,
-			ServerNotEmptyException {
+			ServerNotEmptyException, NoMoreServersAvailableException {
 		if (server == null || serverMap.get(server.getName()) == null) {
 			throw new UnknownServerException(
 					"Tryed to turn off an unknown server.");

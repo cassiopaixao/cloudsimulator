@@ -7,3 +7,12 @@
 
 # Statistics and input files #
 *.csv
+
+# Log files
+*.out
+
+# Backup test files
+*.bak
+
+# System files
+.directory

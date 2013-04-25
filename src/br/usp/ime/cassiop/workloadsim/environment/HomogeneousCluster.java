@@ -4,11 +4,6 @@ import br.usp.ime.cassiop.workloadsim.Environment;
 
 public class HomogeneousCluster extends Environment {
 
-	public HomogeneousCluster() {
-		super();
-		initialize();
-	}
-
 	protected void initialize() {
 		clear(true);
 

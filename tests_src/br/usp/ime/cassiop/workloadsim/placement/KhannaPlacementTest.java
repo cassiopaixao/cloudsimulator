@@ -7,12 +7,7 @@ import static br.usp.ime.cassiop.workloadsim.util.TestUtils.failConfiguringMocks
 import static br.usp.ime.cassiop.workloadsim.util.TestUtils.failVerifyingMethodsCalls;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,9 +40,9 @@ public class KhannaPlacementTest {
 		VirtualMachine vm2 = buildVirtualMachine(0.75, 0.25);
 		VirtualMachine vm3 = buildVirtualMachine(0.25, 0.25);
 
-		Server server1 = buildServer(1.0, 1.0);
-		Server server2 = buildServer(0.5, 0.5);
-		Server server3 = buildServer(0.75, 0.75);
+		Server server1 = buildServer(1.0, 0.0);
+		Server server2 = buildServer(0.5, 0.0);
+		Server server3 = buildServer(0.75, 0.0);
 
 		List<Server> serverList = new ArrayList<Server>();
 		serverList.add(server1);
@@ -106,6 +101,8 @@ public class KhannaPlacementTest {
 		khanna.allocate(vm, serverList);
 
 		verify(virtualizationManager).setVmToServer(vm, server2);
+		verify(virtualizationManager, times(1)).setVmToServer(
+				any(VirtualMachine.class), any(Server.class));
 	}
 
 	@Test

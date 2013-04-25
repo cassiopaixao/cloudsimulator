@@ -1,50 +1,26 @@
 package br.usp.ime.cassiop.workloadsim.placement;
 
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import br.usp.ime.cassiop.workloadsim.PlacementModule;
-import br.usp.ime.cassiop.workloadsim.exceptions.DependencyNotSetException;
-import br.usp.ime.cassiop.workloadsim.exceptions.NoMoreServersAvailableException;
-import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
-import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
-import br.usp.ime.cassiop.workloadsim.placement.KhannaTypeChooser.ServerOrderedByResidualCapacityComparator;
-import br.usp.ime.cassiop.workloadsim.util.Constants;
+import br.usp.ime.cassiop.workloadsim.util.MathUtils;
 
-public class KhannaPlacement extends PlacementModule {
+public class KhannaPlacement extends PlacementStrategy {
 
-	final Logger logger = LoggerFactory.getLogger(KhannaPlacement.class);
-
-	public void consolidateAll(List<VirtualMachine> demand)
-			throws DependencyNotSetException {
-		verifyDependencies(demand);
-
-		List<Server> servers = new ArrayList<Server>(
-				virtualizationManager.getActiveServersList());
-
-		for (VirtualMachine vm : demand) {
-			try {
-				if (vm.getCurrentServer() == null) {
-					allocate(vm, servers);
-				}
-			} catch (UnknownVirtualMachineException e) {
-				logger.error("UnknownVirtualMachineException thrown. VM: {}",
-						vm);
-			} catch (UnknownServerException e) {
-				logger.error("UnknownServerException thrown. {}",
-						e.getMessage());
-			}
-		}
+	@Override
+	public void orderServers(List<Server> servers) {
 	}
 
-	public void allocate(VirtualMachine vm, List<Server> servers)
-			throws UnknownVirtualMachineException, UnknownServerException {
+	@Override
+	public void orderDemand(List<VirtualMachine> demand) {
+	}
+
+	@Override
+	public Server selectDestinationServer(VirtualMachine vm,
+			List<Server> servers) {
 		// sort servers by residual capacity
 		Collections.sort(servers,
 				new ServerOrderedByResidualCapacityComparator());
@@ -58,32 +34,54 @@ public class KhannaPlacement extends PlacementModule {
 			}
 		}
 
-		if (destinationServer == null) {
-			try {
-				destinationServer = virtualizationManager
-						.getNextInactiveServer(vm, new KhannaTypeChooser());
+		return destinationServer;
+	}
 
-				if (destinationServer != null) {
-					servers.add(destinationServer);
-				}
-			} catch (NoMoreServersAvailableException e) {
+	@Override
+	public Server chooseServerType(VirtualMachine vmDemand,
+			List<Server> machineTypes) {
+		Collections.sort(machineTypes,
+				new ServerOrderedByResidualCapacityComparator());
+
+		Server selectedMachine = null;
+
+		for (Server server : machineTypes) {
+			if (server.canHost(vmDemand, true)) {
+				selectedMachine = server;
+				break;
 			}
 		}
 
-		if (destinationServer == null) {
-			destinationServer = PlacementUtils.lessLossEmptyServer(servers, vm);
+		if (selectedMachine == null) {
+			// logger.debug("No inactive physical machine can satisfy the virtual machine's demand. Activating the physical machine with lowest loss of performance.");
+
+			Server lessLossOfPerformanceMachine = placementUtils
+					.lessLossOfPerformanceMachine(machineTypes, vmDemand);
+
+			if (lessLossOfPerformanceMachine == null) {
+				// logger.debug("There is no inactive physical machine. Need to overload one.");
+				return null;
+			}
+
+			selectedMachine = lessLossOfPerformanceMachine;
+		}
+		return selectedMachine;
+	}
+
+	public static class ServerOrderedByResidualCapacityComparator implements
+			Comparator<Server> {
+		@Override
+		public int compare(Server o1, Server o2) {
+			if (MathUtils.lessThan(o1.getResidualCapacity(),
+					o2.getResidualCapacity())) {
+				return -1;
+			} else if (MathUtils.equals(o1.getResidualCapacity(),
+					o2.getResidualCapacity())) {
+				return 0;
+			} else {
+				return 1;
+			}
 		}
 
-		if (destinationServer == null) {
-			logger.info("No server could allocate the virtual machine: {}.",
-					vm.toString());
-			statisticsModule.addToStatisticValue(
-					Constants.STATISTIC_VIRTUAL_MACHINES_NOT_ALLOCATED, 1);
-
-		}
-
-		if (destinationServer != null) {
-			virtualizationManager.setVmToServer(vm, destinationServer);
-		}
 	}
 }

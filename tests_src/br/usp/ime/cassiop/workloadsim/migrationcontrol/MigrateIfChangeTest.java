@@ -4,8 +4,9 @@ import static br.usp.ime.cassiop.workloadsim.util.TestUtils.buildServer;
 import static br.usp.ime.cassiop.workloadsim.util.TestUtils.buildVirtualMachine;
 import static br.usp.ime.cassiop.workloadsim.util.TestUtils.failConfiguringInitialState;
 import static br.usp.ime.cassiop.workloadsim.util.TestUtils.failConfiguringMocks;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -17,8 +18,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import br.usp.ime.cassiop.workloadsim.StatisticsModule;
@@ -31,14 +30,6 @@ import br.usp.ime.cassiop.workloadsim.util.Constants;
 import br.usp.ime.cassiop.workloadsim.util.TestUtils.RemoveVmFromServer;
 
 public class MigrateIfChangeTest {
-
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-	}
-
-	@Before
-	public void setUp() throws Exception {
-	}
 
 	@Test
 	public void testControlWithoutReallocation()
@@ -142,6 +133,12 @@ public class MigrateIfChangeTest {
 		assertTrue(result.contains(newVm2));
 		assertTrue(result.contains(newVm3));
 		assertTrue(server1.getVirtualMachines().isEmpty());
+		
+		for (VirtualMachine vm : result) {
+			assertNull(vm.getCurrentServer());
+			assertNotNull(vm.getLastServer());
+		}
+		
 		verify(statisticsModule).setStatisticValue(
 				eq(Constants.STATISTIC_VIRTUAL_MACHINES_TO_REALLOCATE), eq(3));
 		for (VirtualMachine vm : result) {

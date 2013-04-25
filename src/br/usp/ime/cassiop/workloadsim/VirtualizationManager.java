@@ -47,6 +47,7 @@ public interface VirtualizationManager {
 			throws UnknownVirtualMachineException, UnknownServerException;
 
 	public abstract void turnOffServer(Server server)
-			throws UnknownServerException, ServerNotEmptyException;
+			throws UnknownServerException, ServerNotEmptyException,
+			NoMoreServersAvailableException;
 
 }
