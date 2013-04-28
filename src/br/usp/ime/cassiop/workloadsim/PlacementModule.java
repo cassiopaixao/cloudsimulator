@@ -132,7 +132,7 @@ public class PlacementModule implements Parametrizable {
 		}
 	}
 
-	public final void allocate(VirtualMachine vm, List<Server> servers)
+	public void allocate(VirtualMachine vm, List<Server> servers)
 			throws UnknownVirtualMachineException, UnknownServerException {
 
 		Server destinationServer = placementStrategy.selectDestinationServer(
