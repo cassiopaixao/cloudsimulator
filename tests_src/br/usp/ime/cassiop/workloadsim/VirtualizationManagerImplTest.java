@@ -1,28 +1,15 @@
 package br.usp.ime.cassiop.workloadsim;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyDouble;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
+import static br.usp.ime.cassiop.workloadsim.util.TestUtils.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
@@ -30,36 +17,11 @@ import br.usp.ime.cassiop.workloadsim.exceptions.NoMoreServersAvailableException
 import br.usp.ime.cassiop.workloadsim.exceptions.ServerNotEmptyException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownServerException;
 import br.usp.ime.cassiop.workloadsim.exceptions.UnknownVirtualMachineException;
-import br.usp.ime.cassiop.workloadsim.model.ResourceType;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 import br.usp.ime.cassiop.workloadsim.util.Constants;
 
 public class VirtualizationManagerImplTest {
-
-	private Server buildServer(String name, double cpu, double mem) {
-		Server server = buildServer(cpu, mem);
-		server.setName(name);
-		return server;
-	}
-
-	private Server buildServer(double cpu, double mem) {
-		Server server = new Server();
-		server.setCapacity(ResourceType.CPU, cpu);
-		server.setCapacity(ResourceType.MEMORY, mem);
-		return server;
-	}
-
-	private VirtualMachine buildVm(double cpu, double mem) {
-		VirtualMachine vm = new VirtualMachine();
-		vm.setDemand(ResourceType.CPU, cpu);
-		vm.setDemand(ResourceType.MEMORY, mem);
-		return vm;
-	}
-
-	@Before
-	public void setUp() throws Exception {
-	}
 
 	@Test
 	public void testGetActiveVirtualMachines() {
@@ -77,7 +39,8 @@ public class VirtualizationManagerImplTest {
 	}
 
 	@Test
-	public void testSetVmToServerOk() {
+	public void testSetVmToServerOk() throws UnknownVirtualMachineException,
+			UnknownServerException {
 		VirtualizationManager virtMan = new VirtualizationManagerImpl();
 		Environment environment = mock(Environment.class);
 		StatisticsModule statisticsModule = mock(StatisticsModule.class);
@@ -89,28 +52,25 @@ public class VirtualizationManagerImplTest {
 		// http://schuchert.wikispaces.com/Mockito.LoginServiceExample
 
 		Server server1 = buildServer(1.0, 1.0);
+		VirtualMachine vm1 = buildVirtualMachine(0.1, 0.1);
 
 		// configuring mock;
 		try {
 			when(environment.getMachineOfType(server1)).thenReturn(
 					buildServer(1.0, 1.0));
 		} catch (Exception e) {
-			fail("Mocking configuration shouldn't throw any exception.");
+			failConfiguringMocks(e);
 		}
 
 		try {
 			server1 = virtMan.activateServerOfType(server1);
-		} catch (UnknownServerException e) {
-			fail("There should be servers of this type.");
-		} catch (NoMoreServersAvailableException e) {
-			fail("There should be servers of this type.");
+		} catch (Exception e) {
+			failConfiguringInitialState(e);
 		}
 
+		virtMan.setVmToServer(vm1, server1);
+
 		try {
-			VirtualMachine vm1 = buildVm(0.1, 0.1);
-
-			virtMan.setVmToServer(vm1, server1);
-
 			assertTrue(server1.getVirtualMachines().contains(vm1));
 			assertTrue(virtMan.getActiveServersList().contains(server1));
 			assertEquals(virtMan.getActiveVirtualMachines().get(vm1.getName()),
@@ -120,16 +80,15 @@ public class VirtualizationManagerImplTest {
 			verify(statisticsModule, never()).addToStatisticValue(
 					eq(Constants.STATISTIC_MIGRATIONS_COST), anyDouble());
 
-		} catch (UnknownVirtualMachineException e) {
-			fail("Virtual machine isn't null. It exists.");
-		} catch (UnknownServerException e) {
-			fail("This server exists. Should be known.");
+		} catch (Exception e) {
+			failVerifyingMethodsCalls(e);
 		}
 
 	}
 
 	@Test
-	public void testSetVmToServerMigrationPreviousDeallocation() {
+	public void testSetVmToServerMigrationPreviousDeallocation()
+			throws UnknownVirtualMachineException, UnknownServerException {
 		VirtualizationManager virtMan = new VirtualizationManagerImpl();
 		Environment environment = mock(Environment.class);
 		StatisticsModule statisticsModule = mock(StatisticsModule.class);
@@ -141,29 +100,26 @@ public class VirtualizationManagerImplTest {
 		// http://schuchert.wikispaces.com/Mockito.LoginServiceExample
 
 		Server server1 = buildServer(1.0, 1.0);
+		VirtualMachine vm1 = buildVirtualMachine(0.1, 0.1);
+		vm1.setLastServer(buildServer(0.5, 0.5));
 
 		// configuring mock;
 		try {
 			when(environment.getMachineOfType(server1)).thenReturn(
 					buildServer(1.0, 1.0));
 		} catch (Exception e) {
-			fail("Mocking configuration shouldn't throw any exception.");
+			failConfiguringMocks(e);
 		}
 
 		try {
 			server1 = virtMan.activateServerOfType(server1);
-		} catch (UnknownServerException e) {
-			fail("There should be servers of this type.");
-		} catch (NoMoreServersAvailableException e) {
-			fail("There should be servers of this type.");
+		} catch (Exception e) {
+			failConfiguringInitialState(e);
 		}
 
+		virtMan.setVmToServer(vm1, server1);
+
 		try {
-			VirtualMachine vm1 = buildVm(0.1, 0.1);
-			vm1.setLastServer(buildServer(0.5, 0.5));
-
-			virtMan.setVmToServer(vm1, server1);
-
 			assertTrue(server1.getVirtualMachines().contains(vm1));
 			assertTrue(virtMan.getActiveServersList().contains(server1));
 			assertEquals(virtMan.getActiveVirtualMachines().get(vm1.getName()),
@@ -174,10 +130,8 @@ public class VirtualizationManagerImplTest {
 					eq(Constants.STATISTIC_MIGRATIONS_COST),
 					eq(vm1.getResourceUtilization()));
 
-		} catch (UnknownVirtualMachineException e) {
-			fail("Virtual machine isn't null. It exists.");
-		} catch (UnknownServerException e) {
-			fail("This server exists. Should be known.");
+		} catch (Exception e) {
+			failVerifyingMethodsCalls(e);
 		}
 
 	}
@@ -203,19 +157,18 @@ public class VirtualizationManagerImplTest {
 			when(environment.getMachineOfType(server1)).thenReturn(
 					buildServer(1.0, 1.0));
 		} catch (Exception e) {
-			fail("Mocking configuration shouldn't throw any exception.");
+			failConfiguringMocks(e);
 		}
 
 		try {
 			server1 = virtMan.activateServerOfType(server1);
-		} catch (UnknownServerException e) {
-			fail("There should be servers of this type.");
-		} catch (NoMoreServersAvailableException e) {
-			fail("There should be servers of this type.");
+		} catch (Exception e) {
+			failConfiguringInitialState(e);
 		}
 
+		// FIXME should refactor tests
 		try {
-			virtMan.setVmToServer(buildVm(0.1, 0.1), server2);
+			virtMan.setVmToServer(buildVirtualMachine(0.1, 0.1), server2);
 			fail("Server 2 doesn't exist in environment.");
 		} catch (UnknownVirtualMachineException e) {
 			fail("A valid virtual machine was provided.");
@@ -224,7 +177,7 @@ public class VirtualizationManagerImplTest {
 		}
 
 		try {
-			virtMan.setVmToServer(buildVm(0.1, 0.1), falseServer1);
+			virtMan.setVmToServer(buildVirtualMachine(0.1, 0.1), falseServer1);
 			fail("Server 1 is different from the \"Server 1\" in argument.");
 		} catch (UnknownVirtualMachineException e) {
 			fail("A valid virtual machine was provided.");
@@ -233,7 +186,7 @@ public class VirtualizationManagerImplTest {
 		}
 
 		try {
-			virtMan.setVmToServer(buildVm(0.1, 0.1), null);
+			virtMan.setVmToServer(buildVirtualMachine(0.1, 0.1), null);
 			fail("A null server shouldn't be accepted.");
 		} catch (UnknownVirtualMachineException e) {
 			fail("A valid virtual machine was provided.");
@@ -243,8 +196,9 @@ public class VirtualizationManagerImplTest {
 
 	}
 
-	@Test
-	public void testSetVmToServerUnknownVirtualMachineException() {
+	@Test(expected = UnknownVirtualMachineException.class)
+	public void testSetVmToServerUnknownVirtualMachineException()
+			throws UnknownVirtualMachineException, UnknownServerException {
 		VirtualizationManager virtMan = new VirtualizationManagerImpl();
 		Environment environment = mock(Environment.class);
 		StatisticsModule statisticsModule = mock(StatisticsModule.class);
@@ -265,30 +219,22 @@ public class VirtualizationManagerImplTest {
 			when(environment.getMachineOfType(server2)).thenReturn(
 					buildServer(1.0, 1.0));
 		} catch (Exception e) {
-			fail("Mocking configuration shouldn't throw any exception.");
+			failConfiguringMocks(e);
 		}
 
 		try {
 			server1 = virtMan.activateServerOfType(server1);
 			server2 = virtMan.activateServerOfType(server2);
-		} catch (UnknownServerException e) {
-			fail("There should be servers of this type.");
-		} catch (NoMoreServersAvailableException e) {
-			fail("There should be servers of this type.");
+		} catch (Exception e) {
+			failConfiguringInitialState(e);
 		}
 
-		try {
-			virtMan.setVmToServer(null, server1);
-			fail("A null virtual machine shouldn't be accepted.");
-		} catch (UnknownVirtualMachineException e) {
-			assertNotNull("A null virtual machine shouldn't be accepted", e);
-		} catch (UnknownServerException e) {
-			fail("Server 1 is valid.");
-		}
+		virtMan.setVmToServer(null, server1);
 	}
 
 	@Test
-	public void testSetVmToServerMigrationOnDemmandDeallocation() {
+	public void testSetVmToServerMigrationOnDemmandDeallocation()
+			throws UnknownVirtualMachineException, UnknownServerException {
 		VirtualizationManager virtMan = new VirtualizationManagerImpl();
 		Environment environment = mock(Environment.class);
 		StatisticsModule statisticsModule = mock(StatisticsModule.class);
@@ -302,6 +248,8 @@ public class VirtualizationManagerImplTest {
 		Server server1 = buildServer("1", 1.0, 1.0);
 		Server server2 = buildServer("2", 1.0, 1.0);
 
+		VirtualMachine vm = buildVirtualMachine(0.1, 0.1);
+
 		// configuring mock;
 		try {
 			when(environment.getMachineOfType(server1)).thenReturn(
@@ -309,25 +257,21 @@ public class VirtualizationManagerImplTest {
 			when(environment.getMachineOfType(server2)).thenReturn(
 					buildServer(1.0, 1.0));
 		} catch (Exception e) {
-			fail("Mocking configuration shouldn't throw any exception.");
+			failConfiguringMocks(e);
 		}
 
 		try {
 			server1 = virtMan.activateServerOfType(server1);
 			server2 = virtMan.activateServerOfType(server2);
-		} catch (UnknownServerException e) {
-			fail("There should be servers of this type.");
-		} catch (NoMoreServersAvailableException e) {
-			fail("There should be servers of this type.");
-		}
-
-		try {
-			VirtualMachine vm = buildVm(0.1, 0.1);
 
 			virtMan.setVmToServer(vm, server1);
+		} catch (Exception e) {
+			failConfiguringInitialState(e);
+		}
 
-			virtMan.setVmToServer(vm, server2);
+		virtMan.setVmToServer(vm, server2);
 
+		try {
 			assertFalse(server1.getVirtualMachines().contains(vm));
 			assertTrue(server2.getVirtualMachines().contains(vm));
 
@@ -340,15 +284,14 @@ public class VirtualizationManagerImplTest {
 					eq(Constants.STATISTIC_MIGRATIONS_COST),
 					eq(vm.getResourceUtilization()));
 
-		} catch (UnknownVirtualMachineException e) {
-			fail("Virtual machine is valid.");
-		} catch (UnknownServerException e) {
-			fail("Servers are valid.");
+		} catch (Exception e) {
+			failVerifyingMethodsCalls(e);
 		}
 	}
 
 	@Test
-	public void testSetVmToServerMigrationOnDemmandNotNeeded() {
+	public void testSetVmToServerMigrationOnDemmandNotNeeded()
+			throws UnknownVirtualMachineException, UnknownServerException {
 		VirtualizationManager virtMan = new VirtualizationManagerImpl();
 		Environment environment = mock(Environment.class);
 		StatisticsModule statisticsModule = mock(StatisticsModule.class);
@@ -361,29 +304,26 @@ public class VirtualizationManagerImplTest {
 
 		Server server1 = buildServer("1", 1.0, 1.0);
 
+		VirtualMachine vm = buildVirtualMachine(0.1, 0.1);
+
 		// configuring mock;
 		try {
 			when(environment.getMachineOfType(server1)).thenReturn(
 					buildServer(1.0, 1.0));
 		} catch (Exception e) {
-			fail("Mocking configuration shouldn't throw any exception.");
+			failConfiguringMocks(e);
 		}
 
 		try {
 			server1 = virtMan.activateServerOfType(server1);
-		} catch (UnknownServerException e) {
-			fail("There should be servers of this type.");
-		} catch (NoMoreServersAvailableException e) {
-			fail("There should be servers of this type.");
+			virtMan.setVmToServer(vm, server1);
+		} catch (Exception e) {
+			failConfiguringInitialState(e);
 		}
 
+		virtMan.setVmToServer(vm, server1);
+
 		try {
-			VirtualMachine vm = buildVm(0.1, 0.1);
-
-			virtMan.setVmToServer(vm, server1);
-
-			virtMan.setVmToServer(vm, server1);
-
 			assertTrue(server1.getVirtualMachines().contains(vm));
 			assertEquals(server1, vm.getCurrentServer());
 			assertNotSame(server1, vm.getLastServer());
@@ -393,15 +333,14 @@ public class VirtualizationManagerImplTest {
 			verify(statisticsModule, never()).addToStatisticValue(
 					eq(Constants.STATISTIC_MIGRATIONS_COST), anyDouble());
 
-		} catch (UnknownVirtualMachineException e) {
-			fail("Virtual machine is valid.");
-		} catch (UnknownServerException e) {
-			fail("Servers are valid.");
+		} catch (Exception e) {
+			failVerifyingMethodsCalls(e);
 		}
 	}
 
 	@Test
-	public void testActivateServerOfType() {
+	public void testActivateServerOfType() throws UnknownServerException,
+			NoMoreServersAvailableException {
 		VirtualizationManager virtMan = new VirtualizationManagerImpl();
 		Environment environment = mock(Environment.class);
 		StatisticsModule statisticsModule = mock(StatisticsModule.class);
@@ -427,23 +366,17 @@ public class VirtualizationManagerImplTest {
 			when(environment.getMachineOfType(null)).thenThrow(
 					new UnknownServerException());
 		} catch (Exception e) {
-			fail("Mocking configuration shouldn't throw any exception.");
+			failConfiguringMocks(e);
 		}
 
-		try {
-			server1 = virtMan.activateServerOfType(server1);
+		server1 = virtMan.activateServerOfType(server1);
 
-			assertTrue(virtMan.getActiveServersList().contains(server1));
-		} catch (UnknownServerException e) {
-			fail("There should be servers of this type.");
-		} catch (NoMoreServersAvailableException e) {
-			fail("There should be servers of this type.");
-		}
+		assertTrue(virtMan.getActiveServersList().contains(server1));
 	}
 
 	@Test(expected = UnknownServerException.class)
 	public void testActivateServerOfTypeRequestingAnUnexistentServer()
-			throws UnknownServerException {
+			throws UnknownServerException, NoMoreServersAvailableException {
 		VirtualizationManager virtMan = new VirtualizationManagerImpl();
 		Environment environment = mock(Environment.class);
 		StatisticsModule statisticsModule = mock(StatisticsModule.class);
@@ -453,59 +386,29 @@ public class VirtualizationManagerImplTest {
 
 		Server server1 = buildServer("1", 1.0, 1.0);
 
-		// configuring mock;
 		try {
 			when(environment.getMachineOfType(server1)).thenThrow(
 					new UnknownServerException());
 			when(environment.getMachineOfType(null)).thenThrow(
 					new UnknownServerException());
 		} catch (Exception e) {
-			fail("Mocking configuration shouldn't throw any exception.");
+			failConfiguringMocks(e);
 		}
 
-		try {
-			server1 = virtMan.activateServerOfType(server1);
-			fail("There's no Server1 type in environment.");
-		} catch (UnknownServerException e) {
-			throw e;
-		} catch (NoMoreServersAvailableException e) {
-			fail("Shouldn't throw NoMoreServersAvailableException.");
-		}
+		server1 = virtMan.activateServerOfType(server1);
 	}
 
 	@Test(expected = UnknownServerException.class)
 	public void testActivateServerOfTypeRequestingANullServer()
-			throws UnknownServerException {
+			throws UnknownServerException, NoMoreServersAvailableException {
 		VirtualizationManager virtMan = new VirtualizationManagerImpl();
-		Environment environment = mock(Environment.class);
-		StatisticsModule statisticsModule = mock(StatisticsModule.class);
 
-		virtMan.setEnvironment(environment);
-		virtMan.setStatisticsModule(statisticsModule);
-
-		// configuring mock;
-		try {
-			when(environment.getMachineOfType(any(Server.class))).thenReturn(
-					buildServer(1.0, 1.0));
-			when(environment.getMachineOfType(null)).thenThrow(
-					new UnknownServerException());
-		} catch (Exception e) {
-			fail("Mocking configuration shouldn't throw any exception.");
-		}
-
-		try {
-			virtMan.activateServerOfType(null);
-			fail("Server's argument is null. Should throw an UnknownServerException.");
-		} catch (UnknownServerException e) {
-			throw e;
-		} catch (NoMoreServersAvailableException e) {
-			fail("Shouldn't throw NoMoreServersAvailableException.");
-		}
+		virtMan.activateServerOfType(null);
 	}
 
 	@Test(expected = NoMoreServersAvailableException.class)
 	public void testActivateServerOfTypeRequestingAServerWithNoMoreMachinesAvailable()
-			throws NoMoreServersAvailableException {
+			throws NoMoreServersAvailableException, UnknownServerException {
 		VirtualizationManager virtMan = new VirtualizationManagerImpl();
 		Environment environment = mock(Environment.class);
 		StatisticsModule statisticsModule = mock(StatisticsModule.class);
@@ -515,28 +418,21 @@ public class VirtualizationManagerImplTest {
 
 		Server server1 = buildServer(1.0, 1.0);
 
-		// configuring mock;
 		try {
 			when(environment.getMachineOfType(server1)).thenThrow(
 					new NoMoreServersAvailableException());
 			when(environment.getMachineOfType(null)).thenThrow(
 					new UnknownServerException());
 		} catch (Exception e) {
-			fail("Mocking configuration shouldn't throw any exception.");
+			failConfiguringMocks(e);
 		}
 
-		try {
-			virtMan.activateServerOfType(server1);
-			fail("There's no more machines of this type. Should throw an NoMoreServersAvailableException.");
-		} catch (UnknownServerException e) {
-			fail("Shouldn't throw UnknownServerException.");
-		} catch (NoMoreServersAvailableException e) {
-			throw e;
-		}
+		virtMan.activateServerOfType(server1);
 	}
 
 	@Test
-	public void testGetNextInactiveServerVirtualMachine() {
+	public void testGetNextInactiveServerVirtualMachine()
+			throws NoMoreServersAvailableException {
 		VirtualizationManager virtualizationManager = new VirtualizationManagerImpl();
 		Environment environment = mock(Environment.class);
 		ServerTypeChooser serverTypeChooser = mock(ServerTypeChooser.class);
@@ -545,7 +441,7 @@ public class VirtualizationManagerImplTest {
 
 		Server server1 = buildServer(1.0, 1.0);
 		Server server2 = buildServer(1.0, 1.0);
-		VirtualMachine vmDemand = buildVm(0.5, 0.5);
+		VirtualMachine vmDemand = buildVirtualMachine(0.5, 0.5);
 		List<Server> serverList = new ArrayList<Server>();
 		serverList.add(server1);
 
@@ -555,29 +451,33 @@ public class VirtualizationManagerImplTest {
 					.thenReturn(server1);
 			when(environment.getMachineOfType(server1)).thenReturn(server2);
 		} catch (Exception e) {
-			fail("Shouldn't trhow exceptions in mock configuration.");
+			failConfiguringMocks(e);
 		}
 
+		Server result = null;
 		try {
-			Server result = virtualizationManager.getNextInactiveServer(
-					vmDemand, serverTypeChooser);
+			result = virtualizationManager.getNextInactiveServer(vmDemand,
+					serverTypeChooser);
+		} finally {
+			try {
+				assertNotSame(result, server1);
+				assertTrue(server1.getType().equals(result.getType()));
 
-			assertNotSame(result, server1);
-			assertTrue(server1.getType().equals(result.getType()));
-
-			verify(environment).getAvailableMachineTypes();
-			verify(environment).getMachineOfType(server1);
-			verify(serverTypeChooser).chooseServerType(vmDemand, serverList);
-
-		} catch (NoMoreServersAvailableException e) {
-			fail("There are available servers. Shouldn't throw NoMoreServersAvailableException.");
-		} catch (UnknownServerException e) {
-			fail("Server should be a valid one.");
+				verify(environment).getAvailableMachineTypes();
+				verify(environment).getMachineOfType(server1);
+				verify(serverTypeChooser)
+						.chooseServerType(vmDemand, serverList);
+				verify(serverTypeChooser, never())
+						.chooseServerTypeEvenOverloading(vmDemand, serverList);
+			} catch (Exception e) {
+				failVerifyingMethodsCalls(e);
+			}
 		}
 	}
 
 	@Test
-	public void testGetNextInactiveServerVirtualMachineOverloadingMachine() {
+	public void testGetNextInactiveServerVirtualMachineOverloadingMachine()
+			throws NoMoreServersAvailableException {
 		VirtualizationManager virtualizationManager = new VirtualizationManagerImpl();
 		Environment environment = mock(Environment.class);
 		ServerTypeChooser serverTypeChooser = mock(ServerTypeChooser.class);
@@ -586,34 +486,40 @@ public class VirtualizationManagerImplTest {
 
 		Server server1 = buildServer(0.5, 0.5);
 		Server server2 = buildServer(0.5, 0.5);
-		VirtualMachine vmDemand = buildVm(1.0, 1.0);
+		VirtualMachine vmDemand = buildVirtualMachine(1.0, 1.0);
 		List<Server> serverList = new ArrayList<Server>();
 		serverList.add(server1);
 
 		try {
 			when(environment.getAvailableMachineTypes()).thenReturn(serverList);
 			when(serverTypeChooser.chooseServerType(vmDemand, serverList))
-					.thenReturn(server1);
+					.thenReturn(null);
+			when(
+					serverTypeChooser.chooseServerTypeEvenOverloading(vmDemand,
+							serverList)).thenReturn(server1);
 			when(environment.getMachineOfType(server1)).thenReturn(server2);
 		} catch (Exception e) {
-			fail("Shouldn't trhow exceptions in mock configuration.");
+			failConfiguringMocks(e);
 		}
 
+		Server result = null;
 		try {
-			Server result = virtualizationManager.getNextInactiveServer(
-					vmDemand, serverTypeChooser);
+			result = virtualizationManager.getNextInactiveServer(vmDemand,
+					serverTypeChooser);
+		} finally {
+			try {
+				assertNotSame(result, server1);
+				assertTrue(server1.getType().equals(result.getType()));
 
-			assertNotSame(result, server1);
-			assertTrue(server1.getType().equals(result.getType()));
-
-			verify(environment).getAvailableMachineTypes();
-			verify(environment).getMachineOfType(server1);
-			verify(serverTypeChooser).chooseServerType(vmDemand, serverList);
-
-		} catch (NoMoreServersAvailableException e) {
-			fail("There are available servers. Shouldn't throw NoMoreServersAvailableException.");
-		} catch (UnknownServerException e) {
-			fail("Server should be a valid one.");
+				verify(environment, times(2)).getAvailableMachineTypes();
+				verify(environment).getMachineOfType(server1);
+				verify(serverTypeChooser)
+						.chooseServerType(vmDemand, serverList);
+				verify(serverTypeChooser).chooseServerTypeEvenOverloading(
+						vmDemand, serverList);
+			} catch (Exception e) {
+				failVerifyingMethodsCalls(e);
+			}
 		}
 	}
 
@@ -627,7 +533,7 @@ public class VirtualizationManagerImplTest {
 		virtualizationManager.setEnvironment(environment);
 
 		Server server1 = buildServer(1.0, 1.0);
-		VirtualMachine vmDemand = buildVm(0.5, 0.5);
+		VirtualMachine vmDemand = buildVirtualMachine(0.5, 0.5);
 		List<Server> serverList = new ArrayList<Server>();
 		serverList.add(server1);
 
@@ -638,13 +544,11 @@ public class VirtualizationManagerImplTest {
 			when(environment.getMachineOfType(server1)).thenThrow(
 					new NoMoreServersAvailableException());
 		} catch (Exception e) {
-			fail("Shouldn't throw exceptions in mock configuration.");
+			failConfiguringMocks(e);
 		}
 
 		virtualizationManager
 				.getNextInactiveServer(vmDemand, serverTypeChooser);
-
-		fail("Should throw NoMoreServersAvailableException.");
 	}
 
 	@Test(expected = NoMoreServersAvailableException.class)
@@ -656,17 +560,18 @@ public class VirtualizationManagerImplTest {
 
 		virtualizationManager.setEnvironment(environment);
 
-		VirtualMachine vmDemand = buildVm(0.5, 0.5);
+		VirtualMachine vmDemand = buildVirtualMachine(0.5, 0.5);
 		List<Server> serverList = new ArrayList<Server>();
 
 		try {
 			when(environment.getAvailableMachineTypes()).thenReturn(serverList);
 			when(serverTypeChooser.chooseServerType(vmDemand, serverList))
 					.thenReturn(null);
-			when(environment.getMachineOfType(any(Server.class))).thenThrow(
-					new NoMoreServersAvailableException());
+			when(
+					serverTypeChooser.chooseServerTypeEvenOverloading(vmDemand,
+							serverList)).thenReturn(null);
 		} catch (Exception e) {
-			fail("Shouldn't throw exceptions in mock configuration.");
+			failConfiguringMocks(e);
 		}
 
 		try {
@@ -674,17 +579,17 @@ public class VirtualizationManagerImplTest {
 					serverTypeChooser);
 		} finally {
 			try {
-				verify(environment).getAvailableMachineTypes();
+				verify(environment, times(2)).getAvailableMachineTypes();
 				verify(environment, never())
 						.getMachineOfType(any(Server.class));
 				verify(serverTypeChooser)
 						.chooseServerType(vmDemand, serverList);
-			} catch (UnknownServerException e) {
-				fail("Shouldn't throw any exception.");
+				verify(serverTypeChooser).chooseServerTypeEvenOverloading(
+						vmDemand, serverList);
+			} catch (Exception e) {
+				failVerifyingMethodsCalls(e);
 			}
 		}
-
-		fail("Should throw NoMoreServersAvailableException.");
 	}
 
 	@Test
@@ -699,14 +604,13 @@ public class VirtualizationManagerImplTest {
 		try {
 			when(environment.getMachineOfType(server1)).thenReturn(server2);
 		} catch (Exception e) {
-			fail("Shouldn't throw exceptions in mock configuration.");
+			failConfiguringMocks(e);
 		}
 
 		try {
 			virtualizationManager.activateServerOfType(server1);
 		} catch (Exception e) {
-			fail("Mocked classes should return valid objects. Exception: "
-					+ e.getMessage());
+			failConfiguringInitialState(e);
 		}
 
 		virtualizationManager.clear();
@@ -729,7 +633,6 @@ public class VirtualizationManagerImplTest {
 		parameters.put(Constants.PARAMETER_STATISTICS_MODULE, statisticsModule);
 
 		virtualizationManager.setParameters(parameters);
-
 	}
 
 	@Test(expected = InvalidParameterException.class)
@@ -783,16 +686,14 @@ public class VirtualizationManagerImplTest {
 			when(vm1.getEndTime()).thenReturn(Long.valueOf(200));
 			when(vm1.getName()).thenReturn("1-0");
 		} catch (Exception e) {
-			fail("Shouldn't throw exceptions in mock configuration. Exception: "
-					+ e.getMessage());
+			failConfiguringMocks(e);
 		}
 
 		try {
 			virtualizationManager.activateServerOfType(server);
 			virtualizationManager.setVmToServer(vm1, server);
 		} catch (Exception e) {
-			fail("Mocked classes should return valid objects. Exception: "
-					+ e.getMessage());
+			failConfiguringInitialState(e);
 		}
 
 		virtualizationManager.deallocateFinishedVms(remainingVms, 200);
@@ -802,8 +703,8 @@ public class VirtualizationManagerImplTest {
 			verify(server, never()).removeVirtualMachine(vm1);
 			verify(vm1, never()).getEndTime();
 
-		} catch (UnknownVirtualMachineException e) {
-			fail("Shouldn't throw any exception.");
+		} catch (Exception e) {
+			failVerifyingMethodsCalls(e);
 		}
 	}
 
@@ -832,16 +733,14 @@ public class VirtualizationManagerImplTest {
 			when(vm1.getName()).thenReturn("1-0");
 			when(vm1.getCurrentServer()).thenReturn(server);
 		} catch (Exception e) {
-			fail("Shouldn't throw exceptions in mock configuration. Exception: "
-					+ e.getMessage());
+			failConfiguringMocks(e);
 		}
 
 		try {
 			virtualizationManager.activateServerOfType(server);
 			virtualizationManager.setVmToServer(vm1, server);
 		} catch (Exception e) {
-			fail("Mocked classes should return valid objects. Exception: "
-					+ e.getMessage());
+			failConfiguringInitialState(e);
 		}
 
 		virtualizationManager.deallocateFinishedVms(remainingVms, 200);
@@ -851,8 +750,8 @@ public class VirtualizationManagerImplTest {
 			verify(server).removeVirtualMachine(vm1);
 			verify(vm1).getEndTime();
 
-		} catch (UnknownVirtualMachineException e) {
-			fail("Shouldn't throw any exception.");
+		} catch (Exception e) {
+			failVerifyingMethodsCalls(e);
 		}
 	}
 
@@ -880,16 +779,14 @@ public class VirtualizationManagerImplTest {
 			when(vm1.getEndTime()).thenReturn(Long.valueOf(300));
 			when(vm1.getName()).thenReturn("1-0");
 		} catch (Exception e) {
-			fail("Shouldn't throw exceptions in mock configuration. Exception: "
-					+ e.getMessage());
+			failConfiguringMocks(e);
 		}
 
 		try {
 			virtualizationManager.activateServerOfType(server);
 			virtualizationManager.setVmToServer(vm1, server);
 		} catch (Exception e) {
-			fail("Mocked classes should return valid objects. Exception: "
-					+ e.getMessage());
+			failConfiguringInitialState(e);
 		}
 
 		virtualizationManager.deallocateFinishedVms(remainingVms, 200);
@@ -899,8 +796,8 @@ public class VirtualizationManagerImplTest {
 			verify(server, never()).removeVirtualMachine(vm1);
 			verify(vm1).getEndTime();
 
-		} catch (UnknownVirtualMachineException e) {
-			fail("Shouldn't throw any exception.");
+		} catch (Exception e) {
+			failVerifyingMethodsCalls(e);
 		}
 	}
 
@@ -925,16 +822,14 @@ public class VirtualizationManagerImplTest {
 			when(vm1.getName()).thenReturn("1-0");
 			when(vm1.getCurrentServer()).thenReturn(server);
 		} catch (Exception e) {
-			fail("Shouldn't throw exceptions in mock configuration. Exception: "
-					+ e.getMessage());
+			failConfiguringMocks(e);
 		}
 
 		try {
 			virtualizationManager.activateServerOfType(server);
 			virtualizationManager.setVmToServer(vm1, server);
 		} catch (Exception e) {
-			fail("Mocked classes should return valid objects. Exception: "
-					+ e.getMessage());
+			failConfiguringInitialState(e);
 		}
 
 		virtualizationManager.deallocate(vm1);
@@ -942,8 +837,8 @@ public class VirtualizationManagerImplTest {
 		try {
 			verify(server).removeVirtualMachine(vm1);
 
-		} catch (UnknownVirtualMachineException e) {
-			fail("Shouldn't throw any exception.");
+		} catch (Exception e) {
+			failVerifyingMethodsCalls(e);
 		}
 	}
 
@@ -1005,16 +900,14 @@ public class VirtualizationManagerImplTest {
 			when(vm1.getCurrentServer()).thenReturn(server);
 			when(vm2.getCurrentServer()).thenReturn(server);
 		} catch (Exception e) {
-			fail("Shouldn't throw exceptions in mock configuration. Exception: "
-					+ e.getMessage());
+			failConfiguringMocks(e);
 		}
 
 		try {
 			virtualizationManager.activateServerOfType(server);
 			virtualizationManager.setVmToServer(vm1, server);
 		} catch (Exception e) {
-			fail("Mocked classes should return valid objects. Exception: "
-					+ e.getMessage());
+			failConfiguringInitialState(e);
 		}
 
 		virtualizationManager.deallocate(vm2);
@@ -1037,15 +930,13 @@ public class VirtualizationManagerImplTest {
 			when(environment.getMachineOfType(server)).thenReturn(server);
 			when(server.getVirtualMachines()).thenReturn(serverVms);
 		} catch (Exception e) {
-			fail("Shouldn't throw exceptions in mock configuration. Exception: "
-					+ e.getMessage());
+			failConfiguringMocks(e);
 		}
 
 		try {
 			virtualizationManager.activateServerOfType(server);
 		} catch (Exception e) {
-			fail("Mocked classes should return valid objects. Exception: "
-					+ e.getMessage());
+			failConfiguringInitialState(e);
 		}
 
 		virtualizationManager.turnOffServer(server);
@@ -1072,15 +963,13 @@ public class VirtualizationManagerImplTest {
 			when(environment.getMachineOfType(server)).thenReturn(server);
 			when(server.getVirtualMachines()).thenReturn(serverVms);
 		} catch (Exception e) {
-			fail("Shouldn't throw exceptions in mock configuration. Exception: "
-					+ e.getMessage());
+			failConfiguringMocks(e);
 		}
 
 		try {
 			virtualizationManager.activateServerOfType(server);
 		} catch (Exception e) {
-			fail("Mocked classes should return valid objects. Exception: "
-					+ e.getMessage());
+			failConfiguringInitialState(e);
 		}
 
 		virtualizationManager.turnOffServer(server);

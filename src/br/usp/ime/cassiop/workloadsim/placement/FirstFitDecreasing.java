@@ -37,31 +37,8 @@ public class FirstFitDecreasing extends PlacementStrategy {
 	@Override
 	public Server chooseServerType(VirtualMachine vmDemand,
 			List<Server> machineTypes) {
-		Server selectedMachine = null;
-
 		Collections.sort(machineTypes);
 
-		for (Server server : machineTypes) {
-			if (server.canHost(vmDemand)) {
-				selectedMachine = server;
-				break;
-			}
-		}
-
-		if (selectedMachine == null) {
-			// logger.debug("No inactive physical machine can satisfy the virtual machine's demand. Activating the physical machine with lowest loss of performance.");
-
-			Server lessLossOfPerformanceMachine = placementUtils
-					.lessLossOfPerformanceMachine(machineTypes, vmDemand);
-
-			if (lessLossOfPerformanceMachine == null) {
-				// logger.debug("There is no inactive physical machine. Need to overload one.");
-				return null;
-			}
-
-			selectedMachine = lessLossOfPerformanceMachine;
-		}
-
-		return selectedMachine;
+		return selectDestinationServer(vmDemand, machineTypes);
 	}
 }

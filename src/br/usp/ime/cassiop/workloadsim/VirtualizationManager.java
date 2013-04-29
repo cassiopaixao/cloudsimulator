@@ -15,39 +15,38 @@ import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 
 public interface VirtualizationManager {
 
-	public abstract HashMap<String, VirtualMachine> getActiveVirtualMachines();
+	public HashMap<String, VirtualMachine> getActiveVirtualMachines();
 
-	public abstract void setStatisticsModule(StatisticsModule statisticsModule);
+	public void setStatisticsModule(StatisticsModule statisticsModule);
 
-	public abstract Environment getEnvironment();
+	public Environment getEnvironment();
 
-	public abstract void setEnvironment(Environment environment);
+	public void setEnvironment(Environment environment);
 
-	public abstract void setVmToServer(VirtualMachine vm, Server server)
+	public void setVmToServer(VirtualMachine vm, Server server)
 			throws UnknownVirtualMachineException, UnknownServerException;
 
-	public abstract Collection<Server> getActiveServersList();
+	public Collection<Server> getActiveServersList();
 
-	public abstract Server getNextInactiveServer(VirtualMachine vmDemand,
+	public Server getNextInactiveServer(VirtualMachine vmDemand,
 			ServerTypeChooser pmTypeChooser)
 			throws NoMoreServersAvailableException;
 
-	public abstract Server activateServerOfType(Server selectedMachine)
+	public Server activateServerOfType(Server selectedMachine)
 			throws UnknownServerException, NoMoreServersAvailableException;
 
-	public abstract void clear();
+	public void clear();
 
-	public abstract void setParameters(Map<String, Object> parameters)
+	public void setParameters(Map<String, Object> parameters)
 			throws InvalidParameterException;
 
-	public abstract void deallocateFinishedVms(List<VirtualMachine> demand,
+	public void deallocateFinishedVms(List<VirtualMachine> demand,
 			long currentTime);
 
-	public abstract void deallocate(VirtualMachine vm)
+	public void deallocate(VirtualMachine vm)
 			throws UnknownVirtualMachineException, UnknownServerException;
 
-	public abstract void turnOffServer(Server server)
-			throws UnknownServerException, ServerNotEmptyException,
-			NoMoreServersAvailableException;
+	public void turnOffServer(Server server) throws UnknownServerException,
+			ServerNotEmptyException, NoMoreServersAvailableException;
 
 }

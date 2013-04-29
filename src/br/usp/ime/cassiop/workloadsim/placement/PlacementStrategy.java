@@ -32,6 +32,12 @@ public abstract class PlacementStrategy implements Parametrizable,
 		}
 	}
 
+	public Server chooseServerTypeEvenOverloading(VirtualMachine vmDemand,
+			List<Server> availableMachineTypes) {
+		return placementUtils.lessLossOfPerformanceMachine(
+				availableMachineTypes, vmDemand);
+	}
+
 	public abstract void orderServers(List<Server> servers);
 
 	public abstract void orderDemand(List<VirtualMachine> demand);

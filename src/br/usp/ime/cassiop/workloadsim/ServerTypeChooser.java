@@ -10,4 +10,6 @@ public interface ServerTypeChooser {
 	public Server chooseServerType(VirtualMachine vmDemand,
 			List<Server> availableMachineTypes);
 
+	public Server chooseServerTypeEvenOverloading(VirtualMachine vmDemand,
+			List<Server> availableMachineTypes);
 }
