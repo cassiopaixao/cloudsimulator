@@ -121,15 +121,37 @@ public class FirstFitDecreasingTest {
 		servers.add(server2);
 		servers.add(server3);
 
-		Server destinationServer = firstFitDecreasing.chooseServerType(vm, servers);
+		Server destinationServer = firstFitDecreasing.chooseServerType(vm,
+				servers);
 
 		assertTrue(servers.get(0).equals(server2));
 		assertTrue(servers.get(1).equals(server1));
 		assertTrue(servers.get(2).equals(server3));
-		
+
 		assertTrue(server3.equals(destinationServer));
-		
-		verify(placementUtils, never()).lessLossOfPerformanceMachine(eq(servers), eq(vm));
+	}
+
+	@Test
+	public void testChooseNoneServerType() {
+		VirtualMachine vm = buildVirtualMachine(0.3, 0.7);
+
+		Server server1 = buildServer(1.0, 0.5);
+		Server server2 = buildServer(0.5, 0.6);
+		Server server3 = buildServer(0.2, 1.0);
+
+		List<Server> servers = new ArrayList<Server>();
+		servers.add(server1);
+		servers.add(server2);
+		servers.add(server3);
+
+		Server destinationServer = firstFitDecreasing.chooseServerType(vm,
+				servers);
+
+		assertTrue(servers.get(0).equals(server3));
+		assertTrue(servers.get(1).equals(server2));
+		assertTrue(servers.get(2).equals(server1));
+
+		assertNull(destinationServer);
 	}
 
 }
