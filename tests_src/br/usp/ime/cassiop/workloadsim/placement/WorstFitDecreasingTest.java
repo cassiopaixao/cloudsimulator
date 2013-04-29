@@ -17,9 +17,8 @@ import org.junit.Test;
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 
-public class BestFitDecreasingTest {
-
-	BestFitDecreasing bfd = null;
+public class WorstFitDecreasingTest {
+	WorstFitDecreasing wfd = null;
 
 	PlacementUtils placementUtils = null;
 
@@ -27,8 +26,8 @@ public class BestFitDecreasingTest {
 	public void setUp() throws Exception {
 		placementUtils = mock(PlacementUtils.class);
 
-		bfd = new BestFitDecreasing();
-		bfd.setPlacementUtils(placementUtils);
+		wfd = new WorstFitDecreasing();
+		wfd.setPlacementUtils(placementUtils);
 	}
 
 	@Test
@@ -42,7 +41,7 @@ public class BestFitDecreasingTest {
 		servers.add(server2);
 		servers.add(server3);
 
-		bfd.orderServers(servers);
+		wfd.orderServers(servers);
 
 		assertTrue(servers.get(0).equals(server1));
 		assertTrue(servers.get(1).equals(server2));
@@ -64,7 +63,7 @@ public class BestFitDecreasingTest {
 		vmList.add(vm4);
 		vmList.add(vm5);
 
-		bfd.orderDemand(vmList);
+		wfd.orderDemand(vmList);
 
 		assertTrue(vmList.get(0).equals(vm3));
 		assertTrue(vmList.get(1).equals(vm1));
@@ -87,9 +86,9 @@ public class BestFitDecreasingTest {
 		servers.add(server3);
 
 		try {
-			when(placementUtils.leavingResource(server1, vm)).thenReturn(0.5);
-			when(placementUtils.leavingResource(server2, vm)).thenReturn(0.3);
-			when(placementUtils.leavingResource(server3, vm)).thenReturn(0.7);
+			when(placementUtils.leavingResource(server1, vm)).thenReturn(0.2);
+			when(placementUtils.leavingResource(server2, vm)).thenReturn(0.5);
+			when(placementUtils.leavingResource(server3, vm)).thenReturn(0.3);
 
 			when(server1.canHost(vm)).thenReturn(true);
 			when(server2.canHost(vm)).thenReturn(true);
@@ -98,7 +97,7 @@ public class BestFitDecreasingTest {
 			failConfiguringMocks(e);
 		}
 
-		Server destinationServer = bfd.selectDestinationServer(vm, servers);
+		Server destinationServer = wfd.selectDestinationServer(vm, servers);
 
 		assertTrue(server2.equals(destinationServer));
 	}
@@ -118,8 +117,8 @@ public class BestFitDecreasingTest {
 
 		try {
 			when(placementUtils.leavingResource(server1, vm)).thenReturn(0.5);
-			when(placementUtils.leavingResource(server2, vm)).thenReturn(0.3);
-			when(placementUtils.leavingResource(server3, vm)).thenReturn(0.7);
+			when(placementUtils.leavingResource(server2, vm)).thenReturn(0.7);
+			when(placementUtils.leavingResource(server3, vm)).thenReturn(0.6);
 
 			when(server1.canHost(vm)).thenReturn(true);
 			when(server2.canHost(vm)).thenReturn(false);
@@ -128,9 +127,9 @@ public class BestFitDecreasingTest {
 			failConfiguringMocks(e);
 		}
 
-		Server destinationServer = bfd.selectDestinationServer(vm, servers);
+		Server destinationServer = wfd.selectDestinationServer(vm, servers);
 
-		assertTrue(server1.equals(destinationServer));
+		assertTrue(server3.equals(destinationServer));
 	}
 
 	@Test
@@ -148,7 +147,7 @@ public class BestFitDecreasingTest {
 			failConfiguringMocks(e);
 		}
 
-		Server destinationServer = bfd.selectDestinationServer(vm, servers);
+		Server destinationServer = wfd.selectDestinationServer(vm, servers);
 
 		assertNull(destinationServer);
 	}
@@ -178,9 +177,9 @@ public class BestFitDecreasingTest {
 			failConfiguringMocks(e);
 		}
 
-		Server destinationServer = bfd.chooseServerType(vm, servers);
+		Server destinationServer = wfd.chooseServerType(vm, servers);
 
-		assertTrue(server1.equals(destinationServer));
+		assertTrue(server2.equals(destinationServer));
 	}
 
 	@Test
@@ -188,23 +187,17 @@ public class BestFitDecreasingTest {
 		VirtualMachine vm = mock(VirtualMachine.class);
 
 		Server server1 = mock(Server.class);
-		Server server2 = mock(Server.class);
-		Server server3 = mock(Server.class);
 
 		List<Server> servers = new ArrayList<Server>();
 		servers.add(server1);
-		servers.add(server2);
-		servers.add(server3);
 
 		try {
 			when(server1.canHost(vm)).thenReturn(false);
-			when(server2.canHost(vm)).thenReturn(false);
-			when(server3.canHost(vm)).thenReturn(false);
 		} catch (Exception e) {
 			failConfiguringMocks(e);
 		}
 
-		Server destinationServer = bfd.chooseServerType(vm, servers);
+		Server destinationServer = wfd.chooseServerType(vm, servers);
 
 		assertNull(destinationServer);
 	}
@@ -222,7 +215,7 @@ public class BestFitDecreasingTest {
 		servers.add(server2);
 		servers.add(server3);
 
-		bfd.chooseServerType(vm, servers);
+		wfd.chooseServerType(vm, servers);
 
 		assertTrue(servers.get(0).equals(server3));
 		assertTrue(servers.get(1).equals(server2));
