@@ -207,6 +207,12 @@ public class ServerTest {
 	}
 
 	@Test
+	public void testGetLoadPercentageCPU() {
+		// parameter ResourceType.CPU &&/|| MEMORY
+		fail("Not implemented yet.");
+	}
+	
+	@Test
 	public void testServer() {
 		Server server = new Server();
 

@@ -41,6 +41,16 @@ public class Server extends Machine {
 				/ (resourceCpu * resourceMem);
 	}
 
+	public double getLoadPercentage(ResourceType type) {
+		if (type == ResourceType.CPU) {
+			return (resourceCpu - freeResourceCpu) / resourceCpu;
+		} else if (type == ResourceType.MEMORY) {
+			return (resourceMem - freeResourceMem) / resourceMem;
+		}
+		return 0.0;
+	}
+
+	@Override
 	public Server clone() {
 		Server s = new Server();
 
@@ -51,7 +61,7 @@ public class Server extends Machine {
 		s.kneePerformanceLossMem = this.kneePerformanceLossMem;
 
 		s.updateFreeResources();
-		
+
 		return s;
 	}
 

@@ -117,11 +117,18 @@ public class MigrationStatistics extends StatisticsModule {
 			statistics.put(Constants.STATISTIC_PARAM_MIGRATION_CONTROL, "");
 		}
 		try {
-			statistics.put(Constants.STATISTIC_PARAM_PLACEMENT,
+			statistics.put(Constants.STATISTIC_PARAM_PLACEMENT_MODULE,
 					parameters.get(Constants.PARAMETER_PLACEMENT_MODULE)
 							.getClass().getSimpleName());
 		} catch (NullPointerException e) {
-			statistics.put(Constants.STATISTIC_PARAM_PLACEMENT, "");
+			statistics.put(Constants.STATISTIC_PARAM_PLACEMENT_MODULE, "");
+		}
+		try {
+			statistics.put(Constants.STATISTIC_PARAM_PLACEMENT_STRATEGY,
+					parameters.get(Constants.PARAMETER_PLACEMENT_STRATEGY)
+							.getClass().getSimpleName());
+		} catch (NullPointerException e) {
+			statistics.put(Constants.STATISTIC_PARAM_PLACEMENT_STRATEGY, "");
 		}
 		try {
 			statistics.put(Constants.STATISTIC_PARAM_FORECASTING_STRATEGY,
@@ -192,7 +199,8 @@ public class MigrationStatistics extends StatisticsModule {
 		statisticsFields.add(Constants.STATISTIC_PARAM_ENVIRONMENT);
 		statisticsFields.add(Constants.STATISTIC_PARAM_ENVIRONMENT_MULTIPLIER);
 		statisticsFields.add(Constants.STATISTIC_PARAM_MIGRATION_CONTROL);
-		statisticsFields.add(Constants.STATISTIC_PARAM_PLACEMENT);
+		statisticsFields.add(Constants.STATISTIC_PARAM_PLACEMENT_MODULE);
+		statisticsFields.add(Constants.STATISTIC_PARAM_PLACEMENT_STRATEGY);
 		statisticsFields.add(Constants.STATISTIC_PARAM_FORECASTING_STRATEGY);
 		statisticsFields.add(Constants.STATISTIC_PARAM_FORECASTING_ERROR);
 		statisticsFields.add(Constants.STATISTIC_PARAM_FORECASTING_VARIATION);

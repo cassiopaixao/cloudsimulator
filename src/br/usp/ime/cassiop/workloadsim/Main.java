@@ -30,8 +30,10 @@ public class Main {
 	boolean shouldLog = false;
 
 	boolean shouldPrintHeader = false;
-	
+
 	int maxThreads = 1;
+
+	long simulationStopTime = -1;
 
 	List<MigrationControlToUse> migrationsToUse = new ArrayList<MigrationControlToUse>();
 
@@ -79,7 +81,12 @@ public class Main {
 
 							executionBuilder.setShouldLog(shouldLog);
 
-							executionBuilder.setShouldPrintHeader(shouldPrintHeader);
+							executionBuilder
+									.setShouldPrintHeader(shouldPrintHeader);
+
+							executionBuilder.setParameter(
+									Constants.PARAMETER_CUSTOM_LAST_TIME,
+									new Long(simulationStopTime));
 
 							executionBuilder.setEnvironment(environmentToUse);
 
@@ -169,13 +176,13 @@ public class Main {
 			// placement strategy to use
 			OptionSpec<String> placementArg = parser
 					.accepts("p",
-							"placement strategy to use (khanna, ffd, bfd, wfd, awf, awfd, all)")
+							"placement strategy to use (khanna, ffd, bfd, wfd, awf, awfd, ffod, all)")
 					.withRequiredArg().ofType(String.class).defaultsTo("all");
 
 			// environment
 			OptionSpec<String> environmentArgs = parser
 					.accepts("c",
-							"cluster (environment) to use (homogeneous, google)")
+							"cluster (environment) to use (homogeneous, google, all)")
 					.withRequiredArg().ofType(String.class)
 					.defaultsTo("homogeneous");
 
@@ -189,6 +196,11 @@ public class Main {
 			OptionSpec<Integer> numberOfThreadsArg = parser
 					.accepts("t", "maximum threads").withRequiredArg()
 					.ofType(Integer.class).describedAs("threads").defaultsTo(1);
+
+			// max time
+			OptionSpec<Long> simulationStopTimeArg = parser
+					.accepts("s", "simulation stop time from workload")
+					.withRequiredArg().ofType(Long.class);
 
 			OptionSet options = parser.parse(args);
 
@@ -246,10 +258,14 @@ public class Main {
 						placementsToUse.add(PlacementType.ALMOST_WORST_FIT);
 					} else if (value.equals("awfd")) {
 						placementsToUse.add(PlacementType.ALMOST_WORST_FIT_DEC);
+					} else if (value.equals("ffod")) {
+						placementsToUse.add(PlacementType.FIRST_FIT_BY_ORDERED_DEVIATION);
 					} else if (value.equals("all")) {
 						placementsToUse = new ArrayList<PlacementType>();
 						for (PlacementType placement : PlacementType.values()) {
-							placementsToUse.add(placement);
+							if (!placementsToUse.contains(placement)) {
+								placementsToUse.add(placement);
+							}
 						}
 						break;
 					}
@@ -265,6 +281,16 @@ public class Main {
 						environmentsToUse.add(EnvironmentToUse.GOOGLE);
 					} else if (value.equals("test")) {
 						environmentsToUse.add(EnvironmentToUse.TEST);
+					} else if (value.equals("all")) {
+						if (!environmentsToUse
+								.contains(EnvironmentToUse.HOMOGENEOUS)) {
+							environmentsToUse.add(EnvironmentToUse.HOMOGENEOUS);
+						}
+						if (!environmentsToUse
+								.contains(EnvironmentToUse.GOOGLE)) {
+							environmentsToUse.add(EnvironmentToUse.GOOGLE);
+						}
+						break;
 					}
 				}
 			}
@@ -290,6 +316,14 @@ public class Main {
 				maxThreads = value.intValue();
 			}
 
+			// max time -- optional
+			if (options.has(simulationStopTimeArg)) {
+				Long value = simulationStopTimeArg.value(options);
+
+				if (value.longValue() > 0) {
+					simulationStopTime = value.longValue();
+				}
+			}
 		} catch (Exception ex) {
 			System.out.println(ex.getMessage());
 			return;

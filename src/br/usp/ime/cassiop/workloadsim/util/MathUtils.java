@@ -108,4 +108,12 @@ public class MathUtils {
 		return b - a >= epsilon || Math.abs(b - a) <= epsilon;
 	}
 
+	public static boolean greaterThanOrEquals(double a, double b) {
+		return greaterThanOrEquals(a, b, EPSILON);
+	}
+
+	public static boolean greaterThanOrEquals(double a, double b, double epsilon) {
+		return a - b >= epsilon || Math.abs(a - b) <= epsilon;
+	}
+
 }

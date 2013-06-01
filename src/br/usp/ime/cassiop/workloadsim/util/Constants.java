@@ -80,7 +80,8 @@ public class Constants {
 	public static final String STATISTIC_PARAM_ENVIRONMENT = "environment";
 	public static final String STATISTIC_PARAM_ENVIRONMENT_MULTIPLIER = "environment_multiplier";
 	public static final String STATISTIC_PARAM_MIGRATION_CONTROL = "migration_control";
-	public static final String STATISTIC_PARAM_PLACEMENT = "placement_strategy";
+	public static final String STATISTIC_PARAM_PLACEMENT_MODULE = "placement_module";
+	public static final String STATISTIC_PARAM_PLACEMENT_STRATEGY = "placement_strategy";
 	public static final String STATISTIC_PARAM_SERVER_TYPE_CHOOSER = "type_chooser_strategy";
 	public static final String STATISTIC_PARAM_FORECASTING_STRATEGY = "forecasting_strategy";
 	public static final String STATISTIC_PARAM_FORECASTING_ERROR = "forecasting_error";
@@ -88,4 +89,6 @@ public class Constants {
 	public static final String STATISTIC_PARAM_FORECASTING_MEASUREMENT_WINDOW = "forecasting_measurement_window";
 	public static final String STATISTIC_PARAM_POWER_OFF_STRATEGY = "poweroff_strategy";
 	public static final String STATISTIC_PARAM_LOW_UTILIZATION_VALUE = "low_utilization_value";
+
+	public static final String PARAMETER_CUSTOM_LAST_TIME = "CustomLastTime";
 }

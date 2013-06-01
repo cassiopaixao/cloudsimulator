@@ -20,6 +20,7 @@ import br.usp.ime.cassiop.workloadsim.migrationcontrol.NoMigrationControl;
 import br.usp.ime.cassiop.workloadsim.placement.AlmostWorstFit;
 import br.usp.ime.cassiop.workloadsim.placement.AlmostWorstFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.BestFitDecreasing;
+import br.usp.ime.cassiop.workloadsim.placement.FirstFitByOrderedDeviation;
 import br.usp.ime.cassiop.workloadsim.placement.FirstFitDecreasing;
 import br.usp.ime.cassiop.workloadsim.placement.KhannaPlacement;
 import br.usp.ime.cassiop.workloadsim.placement.PlacementStrategy;
@@ -40,7 +41,7 @@ import br.usp.ime.cassiop.workloadsim.workload.TestWorkload;
 
 public class ExecutionBuilder {
 	public enum PlacementType {
-		FIRST_FIT_DEC, BEST_FIT_DEC, WORST_FIT_DEC, KHANNA, ALMOST_WORST_FIT, ALMOST_WORST_FIT_DEC
+		FIRST_FIT_DEC, BEST_FIT_DEC, WORST_FIT_DEC, KHANNA, ALMOST_WORST_FIT, ALMOST_WORST_FIT_DEC, FIRST_FIT_BY_ORDERED_DEVIATION
 	};
 
 	public enum StatisticsType {
@@ -153,9 +154,17 @@ public class ExecutionBuilder {
 	}
 
 	public void setPlacementStrategy(PlacementType placement) {
-		executionConfiguration.setParameter(
-				Constants.PARAMETER_PLACEMENT_STRATEGY,
-				getPlacementStrategy(placement));
+		switch (placement) {
+		case FIRST_FIT_BY_ORDERED_DEVIATION:
+			executionConfiguration.setParameter(
+					Constants.PARAMETER_PLACEMENT_MODULE,
+					new FirstFitByOrderedDeviation());
+			break;
+		default:
+			executionConfiguration.setParameter(
+					Constants.PARAMETER_PLACEMENT_STRATEGY,
+					getPlacementStrategy(placement));
+		}
 		this.placement = placement;
 	}
 
@@ -274,6 +283,9 @@ public class ExecutionBuilder {
 		case ALMOST_WORST_FIT_DEC:
 			sb.append("awfd_");
 			break;
+		case FIRST_FIT_BY_ORDERED_DEVIATION:
+			sb.append("ffod_");
+			break;
 		}
 
 		switch (statistics) {
@@ -388,6 +400,10 @@ public class ExecutionBuilder {
 			canonicalPath = canonicalPath.concat("awfd/");
 			break;
 		case KHANNA:
+			break;
+		case FIRST_FIT_BY_ORDERED_DEVIATION:
+			canonicalPath = canonicalPath.concat("ffod/");
+			break;
 		}
 
 		path = new File(canonicalPath);
@@ -455,8 +471,10 @@ public class ExecutionBuilder {
 			return new AlmostWorstFit();
 		case ALMOST_WORST_FIT_DEC:
 			return new AlmostWorstFitDecreasing();
+		case FIRST_FIT_BY_ORDERED_DEVIATION:
+			return null;
 		}
-		return new FirstFitDecreasing();
+		return null;
 	}
 
 	private Environment getEnvironment(EnvironmentToUse environment) {

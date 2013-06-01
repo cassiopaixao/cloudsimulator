@@ -6,6 +6,25 @@ public class VirtualMachine extends Machine {
 	private Server currentServer = null;
 	private long endTime = 0;
 
+	@Override
+	public VirtualMachine clone() {
+		return clone(false);
+	}
+
+	public VirtualMachine clone(boolean cloneAllocationStatus) {
+		VirtualMachine vm = new VirtualMachine();
+		vm.setName(name);
+		vm.setEndTime(endTime);
+		vm.setDemand(ResourceType.CPU, resourceCpu);
+		vm.setDemand(ResourceType.MEMORY, resourceMem);
+
+		if (cloneAllocationStatus) {
+			vm.currentServer = this.currentServer;
+			vm.lastServer = this.lastServer;
+		}
+		return vm;
+	}
+
 	public Server getCurrentServer() {
 		return currentServer;
 	}

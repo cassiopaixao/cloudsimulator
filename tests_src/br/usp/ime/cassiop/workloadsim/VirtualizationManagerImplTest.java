@@ -994,4 +994,11 @@ public class VirtualizationManagerImplTest {
 		virtualizationManager.turnOffServer(null);
 	}
 
+	@Test
+	public void testCopyAllocationStatus() {
+		VirtualizationManager virtualizationManager = new VirtualizationManagerImpl();
+
+		fail("Not implemented yet");
+	}
+
 }

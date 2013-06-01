@@ -212,4 +212,14 @@ public class EnvironmentTest {
 		}
 	}
 
+	@Test
+	public void testClone() {
+		fail("Not implemented yet.");
+	}
+
+	@Test
+	public void testEquals() {
+		fail("Not implemented yet.");
+	}
+
 }

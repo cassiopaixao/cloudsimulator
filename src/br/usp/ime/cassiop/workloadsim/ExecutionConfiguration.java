@@ -110,7 +110,9 @@ public class ExecutionConfiguration extends Thread {
 
 		virtualizationManager.setParameters(parameters);
 		placementModule.setParameters(parameters);
-		placementStrategy.setParameters(parameters);
+		if (placementStrategy != null) {
+			placementStrategy.setParameters(parameters);
+		}
 		forecastingModule.setParameters(parameters);
 		measurementModule.setParameters(parameters);
 		statisticsModule.setParameters(parameters);
@@ -136,6 +138,13 @@ public class ExecutionConfiguration extends Thread {
 		long timeInterval = workload.getTimeInterval();
 		long currentTime = workload.getInitialTime();
 		long lastTime = workload.getLastTime();
+
+		Object o = parameters.get(Constants.PARAMETER_CUSTOM_LAST_TIME);
+		if (o instanceof Long) {
+			if (((Long) o).longValue() > 0) {
+				lastTime = ((Long) o).longValue();
+			}
+		}
 
 		statisticsModule.initialize();
 		if (allocationLog != null) {
@@ -269,7 +278,7 @@ public class ExecutionConfiguration extends Thread {
 	public void setPlacementModule(PlacementModule placementModule) {
 		this.placementModule = placementModule;
 	}
-	
+
 	public PlacementStrategy getPlacementStrategy() {
 		return placementStrategy;
 	}
@@ -285,7 +294,7 @@ public class ExecutionConfiguration extends Thread {
 	public void setPlacementUtils(PlacementUtils placementUtils) {
 		this.placementUtils = placementUtils;
 	}
-	
+
 	public ForecastingModule getForecastingModule() {
 		return forecastingModule;
 	}

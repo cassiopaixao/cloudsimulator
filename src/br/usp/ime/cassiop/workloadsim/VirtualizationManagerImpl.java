@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import br.usp.ime.cassiop.workloadsim.environment.HomogeneousCluster;
+import br.usp.ime.cassiop.workloadsim.exceptions.IncompatibleObjectsException;
 import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.exceptions.NoMoreServersAvailableException;
 import br.usp.ime.cassiop.workloadsim.exceptions.ServerNotEmptyException;
@@ -130,7 +131,11 @@ public class VirtualizationManagerImpl implements Parametrizable,
 			}
 		}
 
+		// logger.info("Adding VM {} to server {} (type: {})", vm.getName(),
+		// server.getName(), server.getType());
 		server.addVirtualMachine(vm);
+		// logger.info("VM {} added to server {} (type: {})", vm.getName(),
+		// server.getName(), server.getType());
 
 		vmMap.put(vm.getName(), vm);
 
@@ -335,5 +340,77 @@ public class VirtualizationManagerImpl implements Parametrizable,
 
 		serverMap.remove(server.getName());
 		environment.turnOffMachineOfType(server);
+	}
+
+	@Override
+	public void copyAllocationStatus(
+			VirtualizationManager virtualizationManager,
+			List<VirtualMachine> demmnd) throws IncompatibleObjectsException {
+		/*
+		 * verifica se ambiente é o mesmo limpa alocação atual ** provavelmente
+		 * isso mudará depois.. **
+		 * 
+		 * desliga máquinas
+		 * 
+		 * para cada máquina no objeto do parâmetro:
+		 * 
+		 * ativa um servidor do mesmo tipo
+		 * 
+		 * adiciona as vms *** tem q ser as originais, e não as clonadas ***
+		 */
+		if (!environment.equals(virtualizationManager.getEnvironment())) {
+			throw new IncompatibleObjectsException(
+					"Environments aren't compatible.");
+		}
+
+		List<String> oldServers = new ArrayList<String>(serverMap.keySet());
+		for (Server server : serverMap.values()) {
+			server.clear();
+		}
+		for (String serverName : oldServers) {
+			try {
+				turnOffServer(serverMap.get(serverName));
+			} catch (UnknownServerException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ServerNotEmptyException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (NoMoreServersAvailableException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		HashMap<String, Server> serverTypes = new HashMap<String, Server>();
+		for (Server serverType : environment.getAvailableMachineTypes()) {
+			serverTypes.put(serverType.getType(), serverType);
+		}
+
+		for (Server serverToCopy : virtualizationManager.getActiveServersList()) {
+			Server server;
+			try {
+				server = activateServerOfType(serverTypes.get(serverToCopy
+						.getType()));
+
+				for (VirtualMachine vmToCopy : serverToCopy
+						.getVirtualMachines()) {
+					// FIXME aqui tem q adicionar a VM original, e não a cópia!
+					server.addVirtualMachine(vmToCopy);
+				}
+				
+				
+			} catch (UnknownServerException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (NoMoreServersAvailableException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (UnknownVirtualMachineException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+		}
 	}
 }

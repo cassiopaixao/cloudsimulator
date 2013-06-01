@@ -40,32 +40,7 @@ public class KhannaPlacement extends PlacementStrategy {
 	@Override
 	public Server chooseServerType(VirtualMachine vmDemand,
 			List<Server> machineTypes) {
-		Collections.sort(machineTypes,
-				new ServerOrderedByResidualCapacityComparator());
-
-		Server selectedMachine = null;
-
-		for (Server server : machineTypes) {
-			if (server.canHost(vmDemand, true)) {
-				selectedMachine = server;
-				break;
-			}
-		}
-
-		if (selectedMachine == null) {
-			// logger.debug("No inactive physical machine can satisfy the virtual machine's demand. Activating the physical machine with lowest loss of performance.");
-
-			Server lessLossOfPerformanceMachine = placementUtils
-					.lessLossOfPerformanceMachine(machineTypes, vmDemand);
-
-			if (lessLossOfPerformanceMachine == null) {
-				// logger.debug("There is no inactive physical machine. Need to overload one.");
-				return null;
-			}
-
-			selectedMachine = lessLossOfPerformanceMachine;
-		}
-		return selectedMachine;
+		return selectDestinationServer(vmDemand, machineTypes);
 	}
 
 	public static class ServerOrderedByResidualCapacityComparator implements

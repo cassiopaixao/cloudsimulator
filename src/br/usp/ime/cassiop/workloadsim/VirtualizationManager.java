@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import br.usp.ime.cassiop.workloadsim.exceptions.IncompatibleObjectsException;
 import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.exceptions.NoMoreServersAvailableException;
 import br.usp.ime.cassiop.workloadsim.exceptions.ServerNotEmptyException;
@@ -14,6 +15,10 @@ import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
 
 public interface VirtualizationManager {
+
+	public void copyAllocationStatus(
+			VirtualizationManager virtualizationManager,
+			List<VirtualMachine> demand) throws IncompatibleObjectsException;
 
 	public HashMap<String, VirtualMachine> getActiveVirtualMachines();
 

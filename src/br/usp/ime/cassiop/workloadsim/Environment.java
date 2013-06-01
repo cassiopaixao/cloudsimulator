@@ -113,4 +113,26 @@ public abstract class Environment implements Parametrizable {
 	}
 
 	protected abstract void initialize();
+	
+	@Override
+	public Environment clone() {
+		Environment newEnvironment = null;
+		try {
+			newEnvironment = this.getClass().newInstance();
+			newEnvironment.setEnvironmentMultiplier(environmentMultiplier);
+			newEnvironment.initialize();
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return newEnvironment;
+	}
+	
+	public boolean equals(Environment environment) {
+		
+		throw new Exception("Not yet implemented");
+	}
 }
