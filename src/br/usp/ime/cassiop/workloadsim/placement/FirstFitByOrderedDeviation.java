@@ -103,42 +103,38 @@ public class FirstFitByOrderedDeviation extends PlacementModule {
 				List<Server> K = fakeVirtMan.getEnvironment()
 						.getAvailableMachineTypes();
 				List<VirtualMachine> virtualMachines = cloneVMList(demand);
+				fakeVirtMan.copyAllocationStatus(virtualizationManager, virtualMachines);
 
 				// 2.1 2.2 2.3
 				Collections.sort(virtualMachines, new FFODComparator(k));
 
-				// 2.4
-				Server kStar = minimumOportunityCost(virtualMachines.get(0), K);
+				// 2.4 (modified. No special first case)
 
-				double TC = 1; // charge (Fk) of every bin is 1
-				Server newServer = fakeVirtMan.activateServerOfType(kStar);
-				fakeVirtMan.setVmToServer(virtualMachines.get(0), newServer);
+				Server kStar = null;
+				Server jStar = null;
+				Server newServer = null;
 
+				// total cost
+				double TC = 0; // charge (Fk) of every bin is 1
 				// 2.5
-				for (int i = 1; i < virtualMachines.size(); i++) {
+				for (VirtualMachine vm : virtualMachines) {
 					// 2.5.1
-					Server jStar = minimumOportunityCostInActiveServers(
-							virtualMachines.get(i),
+					jStar = minimumOportunityCostInActiveServers(vm,
 							fakeVirtMan.getActiveServersList());
 					// 2.5.2
-					kStar = minimumOportunityCostInInactiveServers(
-							virtualMachines.get(i), fakeVirtMan
-									.getEnvironment()
+					kStar = minimumOportunityCostInInactiveServers(vm,
+							fakeVirtMan.getEnvironment()
 									.getAvailableMachineTypes());
 					// 2.5.3
 					if (jStar == null
 							|| MathUtils.greaterThan(
-									opportunityCost(virtualMachines.get(i),
-											jStar),
-									opportunityCost(virtualMachines.get(i),
-											kStar))) {
+									opportunityCost(vm, jStar),
+									opportunityCost(vm, kStar))) {
 						TC = TC + 1; // charge(Fk) of every bin is 1
 						newServer = fakeVirtMan.activateServerOfType(kStar);
-						fakeVirtMan.setVmToServer(virtualMachines.get(i),
-								newServer);
+						fakeVirtMan.setVmToServer(vm, newServer);
 					} else {
-						fakeVirtMan
-								.setVmToServer(virtualMachines.get(i), jStar);
+						fakeVirtMan.setVmToServer(vm, jStar);
 					}
 				}
 
@@ -150,8 +146,9 @@ public class FirstFitByOrderedDeviation extends PlacementModule {
 			}
 
 			if (virtManWithLowestZub != null) {
-				//copiar alocação para oficial
-				virtualizationManager.copyAllocationStatus(virtManWithLowestZub, demand);	
+				// copiar alocação para oficial
+				virtualizationManager.copyAllocationStatus(
+						virtManWithLowestZub, demand);
 			} else {
 				throw new Exception("Ferrou!");
 			}

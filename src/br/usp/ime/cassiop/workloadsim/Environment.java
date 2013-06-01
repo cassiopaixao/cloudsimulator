@@ -131,8 +131,23 @@ public abstract class Environment implements Parametrizable {
 		return newEnvironment;
 	}
 	
-	public boolean equals(Environment environment) {
+	public boolean isSubset(Environment environment) {
+		HashMap<String, Server> keyList = new HashMap<String, Server>();
+		for (Server server : environmentStatus.keySet()) {
+			keyList.put(server.getType(), server);
+		}
 		
-		throw new Exception("Not yet implemented");
+		for (Server server : environment.environmentStatus.keySet()) {
+			MachineStatus status = environmentStatus.get(keyList.get(server.getType()));
+			if (status == null) {
+				return false;
+			}
+			
+			if (status.getAvailable() < environment.environmentStatus.get(server).getAvailable()) {
+				return false;
+			}
+		}
+		
+		return true;
 	}
 }

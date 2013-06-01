@@ -139,13 +139,15 @@ public class VirtualizationManagerImpl implements Parametrizable,
 
 		vmMap.put(vm.getName(), vm);
 
-		if (vm.getLastServer() != null
-				&& !vm.getLastServer().getName().equals(server.getName())) {
-			statisticsModule.addToStatisticValue(
-					Constants.STATISTIC_MIGRATIONS, 1);
-			statisticsModule.addToStatisticValue(
-					Constants.STATISTIC_MIGRATIONS_COST,
-					vm.getResourceUtilization());
+		if (statisticsModule != null) {
+			if (vm.getLastServer() != null
+					&& !vm.getLastServer().getName().equals(server.getName())) {
+				statisticsModule.addToStatisticValue(
+						Constants.STATISTIC_MIGRATIONS, 1);
+				statisticsModule.addToStatisticValue(
+						Constants.STATISTIC_MIGRATIONS_COST,
+						vm.getResourceUtilization());
+			}
 		}
 	}
 
@@ -345,7 +347,7 @@ public class VirtualizationManagerImpl implements Parametrizable,
 	@Override
 	public void copyAllocationStatus(
 			VirtualizationManager virtualizationManager,
-			List<VirtualMachine> demmnd) throws IncompatibleObjectsException {
+			List<VirtualMachine> demand) throws IncompatibleObjectsException {
 		/*
 		 * verifica se ambiente é o mesmo limpa alocação atual ** provavelmente
 		 * isso mudará depois.. **
@@ -358,7 +360,7 @@ public class VirtualizationManagerImpl implements Parametrizable,
 		 * 
 		 * adiciona as vms *** tem q ser as originais, e não as clonadas ***
 		 */
-		if (!environment.equals(virtualizationManager.getEnvironment())) {
+		if (!environment.isSubset(virtualizationManager.getEnvironment())) {
 			throw new IncompatibleObjectsException(
 					"Environments aren't compatible.");
 		}
@@ -387,6 +389,11 @@ public class VirtualizationManagerImpl implements Parametrizable,
 			serverTypes.put(serverType.getType(), serverType);
 		}
 
+		HashMap<String, VirtualMachine> originalDemand = new HashMap<String, VirtualMachine>();
+		for (VirtualMachine vm : demand) {
+			originalDemand.put(vm.getName(), vm);
+		}
+
 		for (Server serverToCopy : virtualizationManager.getActiveServersList()) {
 			Server server;
 			try {
@@ -395,11 +402,10 @@ public class VirtualizationManagerImpl implements Parametrizable,
 
 				for (VirtualMachine vmToCopy : serverToCopy
 						.getVirtualMachines()) {
-					// FIXME aqui tem q adicionar a VM original, e não a cópia!
-					server.addVirtualMachine(vmToCopy);
+					server.addVirtualMachine(originalDemand.get(vmToCopy
+							.getName()));
 				}
-				
-				
+
 			} catch (UnknownServerException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
