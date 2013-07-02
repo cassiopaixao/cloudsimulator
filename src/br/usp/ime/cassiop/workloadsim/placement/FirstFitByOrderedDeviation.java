@@ -100,8 +100,8 @@ public class FirstFitByOrderedDeviation extends PlacementModule {
 				VirtualizationManager fakeVirtMan = new VirtualizationManagerImpl();
 				fakeVirtMan.setEnvironment(virtualizationManager
 						.getEnvironment().clone());
-				List<Server> K = fakeVirtMan.getEnvironment()
-						.getAvailableMachineTypes();
+//				List<Server> K = fakeVirtMan.getEnvironment()
+//						.getAvailableMachineTypes();
 				List<VirtualMachine> virtualMachines = cloneVMList(demand);
 				fakeVirtMan.copyAllocationStatus(virtualizationManager, virtualMachines);
 
@@ -212,6 +212,9 @@ public class FirstFitByOrderedDeviation extends PlacementModule {
 		return minimumOportunityCost(virtualMachine, eligibleServers);
 	}
 
+	/*
+	 * TODO Consuming a lot of CPU... can optimize?
+	 */
 	private Server minimumOportunityCostInActiveServers(
 			VirtualMachine virtualMachine, Collection<Server> activeServersList) {
 		List<Server> eligibleServers = new LinkedList<Server>();
@@ -263,9 +266,9 @@ public class FirstFitByOrderedDeviation extends PlacementModule {
 			}
 		}
 
-		if (destinationServer == null) {
-			destinationServer = placementUtils.lessLossEmptyServer(servers, vm);
-		}
+//		if (destinationServer == null) {
+//			destinationServer = placementUtils.lessLossEmptyServer(servers, vm);
+//		}
 
 		if (destinationServer == null) {
 			logger.debug("No server could allocate the virtual machine: {}.",

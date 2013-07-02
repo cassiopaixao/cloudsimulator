@@ -8,6 +8,9 @@
 # Statistics and input files #
 *.csv
 
+# resources folder
+res/*
+
 # Log files
 *.out
 

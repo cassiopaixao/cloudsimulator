@@ -171,10 +171,10 @@ public class VirtualizationManagerImpl implements Parametrizable,
 		Server selectedMachine = pmTypeChooser.chooseServerType(vmDemand,
 				environment.getAvailableMachineTypes());
 
-		if (selectedMachine == null) {
-			selectedMachine = pmTypeChooser.chooseServerTypeEvenOverloading(
-					vmDemand, environment.getAvailableMachineTypes());
-		}
+//		if (selectedMachine == null) {
+//			selectedMachine = pmTypeChooser.chooseServerTypeEvenOverloading(
+//					vmDemand, environment.getAvailableMachineTypes());
+//		}
 
 		if (selectedMachine == null) {
 			throw new NoMoreServersAvailableException();

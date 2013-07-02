@@ -57,49 +57,8 @@ public class AlmostWorstFit extends PlacementStrategy {
 	@Override
 	public Server chooseServerType(VirtualMachine vmDemand,
 			List<Server> machineTypes) {
-		Server worstFitMachine = null;
-		double worstFitLeavingResource = -1.0;
 
-		Server almostWorstFitMachine = null;
-		double almostWorstFitLeavingResource = -1.0;
-
-		double leavingResource;
-
-		for (Server server : machineTypes) {
-			if (server.canHost(vmDemand)) {
-				leavingResource = placementUtils.leavingResource(server,
-						vmDemand);
-				if (leavingResource > worstFitLeavingResource) {
-					almostWorstFitMachine = worstFitMachine;
-					almostWorstFitLeavingResource = worstFitLeavingResource;
-
-					worstFitMachine = server;
-					worstFitLeavingResource = leavingResource;
-				} else if (leavingResource > almostWorstFitLeavingResource) {
-					almostWorstFitMachine = server;
-					almostWorstFitLeavingResource = leavingResource;
-				}
-			}
-		}
-
-		if (almostWorstFitMachine == null) {
-			if (worstFitMachine != null) {
-				almostWorstFitMachine = worstFitMachine;
-			} else {
-//				logger.debug("No inactive physical machine can satisfy the virtual machine's demand. Activating the physical machine with lowest loss of performance.");
-
-				Server lessLossOfPerformanceMachine = placementUtils
-						.lessLossOfPerformanceMachine(machineTypes, vmDemand);
-
-				if (lessLossOfPerformanceMachine == null) {
-//					logger.debug("There is no inactive physical machine. Need to overload one.");
-					return null;
-				}
-
-				almostWorstFitMachine = lessLossOfPerformanceMachine;
-			}
-		}
-		return almostWorstFitMachine;
+		return selectDestinationServer(vmDemand, machineTypes);
 	}
 
 }

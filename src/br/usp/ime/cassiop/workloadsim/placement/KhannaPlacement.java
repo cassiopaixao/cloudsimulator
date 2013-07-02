@@ -6,7 +6,6 @@ import java.util.List;
 
 import br.usp.ime.cassiop.workloadsim.model.Server;
 import br.usp.ime.cassiop.workloadsim.model.VirtualMachine;
-import br.usp.ime.cassiop.workloadsim.util.MathUtils;
 
 public class KhannaPlacement extends PlacementStrategy {
 
@@ -47,15 +46,16 @@ public class KhannaPlacement extends PlacementStrategy {
 			Comparator<Server> {
 		@Override
 		public int compare(Server o1, Server o2) {
-			if (MathUtils.lessThan(o1.getResidualCapacity(),
-					o2.getResidualCapacity())) {
-				return -1;
-			} else if (MathUtils.equals(o1.getResidualCapacity(),
-					o2.getResidualCapacity())) {
-				return 0;
-			} else {
-				return 1;
-			}
+			return Double.compare(o1.getResidualCapacity(), o2.getResidualCapacity());
+//			if (MathUtils.lessThan(o1.getResidualCapacity(),
+//					o2.getResidualCapacity())) {
+//				return -1;
+//			} else if (MathUtils.equals(o1.getResidualCapacity(),
+//					o2.getResidualCapacity())) {
+//				return 0;
+//			} else {
+//				return 1;
+//			}
 		}
 
 	}

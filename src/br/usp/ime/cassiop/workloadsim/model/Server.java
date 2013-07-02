@@ -54,14 +54,12 @@ public class Server extends Machine {
 	public Server clone() {
 		Server s = new Server();
 
-		s.resourceCpu = this.resourceCpu;
-		s.resourceMem = this.resourceMem;
-
 		s.kneePerformanceLossCpu = this.kneePerformanceLossCpu;
 		s.kneePerformanceLossMem = this.kneePerformanceLossMem;
 
-		s.updateFreeResources();
-
+		s.setCapacity(ResourceType.CPU, this.resourceCpu);
+		s.setCapacity(ResourceType.MEMORY, this.resourceMem);
+		
 		return s;
 	}
 

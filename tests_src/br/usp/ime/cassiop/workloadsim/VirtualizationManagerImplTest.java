@@ -12,6 +12,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import br.usp.ime.cassiop.workloadsim.exceptions.IncompatibleObjectsException;
 import br.usp.ime.cassiop.workloadsim.exceptions.InvalidParameterException;
 import br.usp.ime.cassiop.workloadsim.exceptions.NoMoreServersAvailableException;
 import br.usp.ime.cassiop.workloadsim.exceptions.ServerNotEmptyException;
@@ -995,9 +996,24 @@ public class VirtualizationManagerImplTest {
 	}
 
 	@Test
-	public void testCopyAllocationStatus() {
+	public void testCopyAllocationStatus() throws IncompatibleObjectsException {
 		VirtualizationManager virtualizationManager = new VirtualizationManagerImpl();
-
+		Environment environment = mock(Environment.class);
+		virtualizationManager.setEnvironment(environment);
+		
+		VirtualizationManager virtManToCopy = mock(VirtualizationManager.class);
+		Environment environmentOfSecondVirtMan = mock(Environment.class);
+		
+		List<VirtualMachine> demand = new ArrayList<VirtualMachine>();
+		
+		try {
+			
+		} catch (Exception e) {
+			failConfiguringMocks(e);
+		}
+		
+		virtualizationManager.copyAllocationStatus(virtManToCopy, demand);
+		
 		fail("Not implemented yet");
 	}
 

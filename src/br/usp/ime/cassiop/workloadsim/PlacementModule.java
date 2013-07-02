@@ -150,14 +150,23 @@ public class PlacementModule implements Parametrizable {
 			}
 		}
 
-		if (destinationServer == null) {
-			destinationServer = placementUtils.lessLossEmptyServer(servers, vm);
-		}
-
+//		if (destinationServer == null) {
+//			destinationServer = placementUtils.lessLossEmptyServer(servers, vm);
+//		}
+		
 		if (destinationServer == null) {
 			logger.debug("No server could allocate the virtual machine: {}.",
 					vm.toString());
-
+			
+			StringBuffer sb = new StringBuffer();
+			sb.append("VM not allocated").append("\t");
+			sb.append(vm.toString()).append("\t");
+			for (Server s : virtualizationManager.getEnvironment().getAvailableMachineTypes()) {
+				sb.append(s.toString()).append("\t");
+			}
+			
+			logger.info(sb.substring(0, sb.length()-1));
+			
 			statisticsModule.addToStatisticValue(
 					Constants.STATISTIC_VIRTUAL_MACHINES_NOT_ALLOCATED, 1);
 

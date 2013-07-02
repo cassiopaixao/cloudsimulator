@@ -150,8 +150,6 @@ public class ExecutionConfiguration extends Thread {
 		if (allocationLog != null) {
 			allocationLog.initialize();
 		}
-		// new consolidation status
-		virtualizationManager.clear();
 		try {
 			while (currentTime <= lastTime) {
 
