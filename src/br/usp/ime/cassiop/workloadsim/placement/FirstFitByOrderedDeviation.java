@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,9 @@ public class FirstFitByOrderedDeviation extends PlacementModule {
 
 	final Logger logger = LoggerFactory
 			.getLogger(FirstFitByOrderedDeviation.class);
+
+	private HashMap<VirtualMachine, Double> cpuRelativeDemmand = null;
+	private HashMap<VirtualMachine, Double> memoryRelativeDemmand = null;
 
 	public void setParameters(Map<String, Object> parameters)
 			throws InvalidParameterException {
@@ -84,6 +88,7 @@ public class FirstFitByOrderedDeviation extends PlacementModule {
 		verifyDependencies(demand);
 
 		try {
+
 			// K = available machine types
 			List<Server> globalK = virtualizationManager.getEnvironment()
 					.getAvailableMachineTypes();
@@ -100,13 +105,16 @@ public class FirstFitByOrderedDeviation extends PlacementModule {
 				VirtualizationManager fakeVirtMan = new VirtualizationManagerImpl();
 				fakeVirtMan.setEnvironment(virtualizationManager
 						.getEnvironment().clone());
-//				List<Server> K = fakeVirtMan.getEnvironment()
-//						.getAvailableMachineTypes();
+				// List<Server> K = fakeVirtMan.getEnvironment()
+				// .getAvailableMachineTypes();
 				List<VirtualMachine> virtualMachines = cloneVMList(demand);
-				fakeVirtMan.copyAllocationStatus(virtualizationManager, virtualMachines);
+				fakeVirtMan.copyAllocationStatus(virtualizationManager,
+						virtualMachines);
 
 				// 2.1 2.2 2.3
-				Collections.sort(virtualMachines, new FFODComparator(k));
+				fillRelativeDemmands(k, virtualMachines);
+				Collections.sort(virtualMachines, new FFODComparator(k,
+						virtualMachines));
 
 				// 2.4 (modified. No special first case)
 
@@ -184,18 +192,14 @@ public class FirstFitByOrderedDeviation extends PlacementModule {
 		double P = server.getLoadPercentage(ResourceType.CPU);
 		double Q = server.getLoadPercentage(ResourceType.MEMORY);
 
-		double p = vm.getDemand(ResourceType.CPU)
-				/ server.getCapacity(ResourceType.CPU);
-		double q = vm.getDemand(ResourceType.MEMORY)
-				/ server.getCapacity(ResourceType.MEMORY);
+		double p = cpuRelativeDemmand.get(vm).doubleValue();
+		double q = memoryRelativeDemmand.get(vm).doubleValue();
 
-		double factor;
 		if (P > Q) {
-			factor = Math.max(p, q - (P - Q));
+			return Math.max(p, q - (P - Q));
 		} else {
-			factor = Math.max(q, p - (Q - P));
+			return Math.max(q, p - (Q - P));
 		}
-		return factor;
 	}
 
 	private Server minimumOportunityCostInInactiveServers(
@@ -203,9 +207,9 @@ public class FirstFitByOrderedDeviation extends PlacementModule {
 		List<Server> eligibleServers = new LinkedList<Server>();
 		for (Server server : availableMachineTypes) {
 			if (MathUtils.greaterThanOrEquals(1,
-					virtualMachine.getDemand(ResourceType.CPU))
-					&& MathUtils.greaterThanOrEquals(1,
-							virtualMachine.getDemand(ResourceType.MEMORY))) {
+					cpuRelativeDemmand.get(virtualMachine).doubleValue())
+					&& MathUtils.greaterThanOrEquals(1, memoryRelativeDemmand
+							.get(virtualMachine).doubleValue())) {
 				eligibleServers.add(server);
 			}
 		}
@@ -214,6 +218,8 @@ public class FirstFitByOrderedDeviation extends PlacementModule {
 
 	/*
 	 * TODO Consuming a lot of CPU... can optimize?
+	 * 
+	 * refactored: 2013_07_09... does it keep consuming a lot?
 	 */
 	private Server minimumOportunityCostInActiveServers(
 			VirtualMachine virtualMachine, Collection<Server> activeServersList) {
@@ -221,10 +227,10 @@ public class FirstFitByOrderedDeviation extends PlacementModule {
 		for (Server server : activeServersList) {
 			if (MathUtils.greaterThanOrEquals(
 					1 - server.getLoadPercentage(ResourceType.CPU),
-					virtualMachine.getDemand(ResourceType.CPU))
+					cpuRelativeDemmand.get(virtualMachine).doubleValue())
 					&& MathUtils.greaterThanOrEquals(
 							1 - server.getLoadPercentage(ResourceType.MEMORY),
-							virtualMachine.getDemand(ResourceType.MEMORY))) {
+							memoryRelativeDemmand.get(virtualMachine))) {
 				eligibleServers.add(server);
 			}
 		}
@@ -266,10 +272,6 @@ public class FirstFitByOrderedDeviation extends PlacementModule {
 			}
 		}
 
-//		if (destinationServer == null) {
-//			destinationServer = placementUtils.lessLossEmptyServer(servers, vm);
-//		}
-
 		if (destinationServer == null) {
 			logger.debug("No server could allocate the virtual machine: {}.",
 					vm.toString());
@@ -285,33 +287,46 @@ public class FirstFitByOrderedDeviation extends PlacementModule {
 	}
 
 	public static class FFODComparator implements Comparator<VirtualMachine> {
-		private double Pk, Qk;
+		private HashMap<VirtualMachine, Double> values = null;
 
-		public FFODComparator(Server serverType) {
+		public FFODComparator(Server serverType, List<VirtualMachine> vmList) {
 			super();
-			this.Pk = serverType.getCapacity(ResourceType.CPU);
-			this.Qk = serverType.getCapacity(ResourceType.MEMORY);
+			double Pk, Qk;
+			Pk = serverType.getCapacity(ResourceType.CPU);
+			Qk = serverType.getCapacity(ResourceType.MEMORY);
+
+			this.values = new HashMap<VirtualMachine, Double>();
+
+			for (VirtualMachine vm : vmList) {
+				double pk, qk;
+				pk = vm.getDemand(ResourceType.CPU) / Pk;
+				qk = vm.getDemand(ResourceType.MEMORY) / Qk;
+
+				values.put(vm, new Double(Math.abs(pk - qk) / (pk + qk)));
+			}
 		}
 
 		@Override
 		public int compare(VirtualMachine o1, VirtualMachine o2) {
-			double o1p = o1.getDemand(ResourceType.CPU) / Pk;
-			double o1q = o1.getDemand(ResourceType.MEMORY) / Qk;
-
-			double o2p = o2.getDemand(ResourceType.CPU) / Pk;
-			double o2q = o2.getDemand(ResourceType.MEMORY) / Qk;
-
-			double o1balanced = Math.abs(o1p - o1q) / (o1p + o1q);
-			double o2balanced = Math.abs(o2p - o2q) / (o2p + o2q);
-
-			if (MathUtils.lessThan(o1balanced, o2balanced)) {
-				return -1;
-			} else if (MathUtils.equals(o1balanced, o2balanced)) {
-				return 0;
-			} else {
-				return 1;
-			}
+			return values.get(o1).compareTo(values.get(o2));
 		}
 
+	}
+
+	private void fillRelativeDemmands(Server serverType,
+			List<VirtualMachine> vmList) {
+		this.cpuRelativeDemmand = new HashMap<VirtualMachine, Double>();
+		this.memoryRelativeDemmand = new HashMap<VirtualMachine, Double>();
+
+		double Pk, Qk;
+		Pk = serverType.getCapacity(ResourceType.CPU);
+		Qk = serverType.getCapacity(ResourceType.MEMORY);
+
+		for (VirtualMachine vm : vmList) {
+			cpuRelativeDemmand.put(vm,
+					new Double(vm.getDemand(ResourceType.CPU) / Pk));
+			memoryRelativeDemmand.put(vm,
+					new Double(vm.getDemand(ResourceType.MEMORY) / Qk));
+		}
 	}
 }
