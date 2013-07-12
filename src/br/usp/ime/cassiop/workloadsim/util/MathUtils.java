@@ -14,7 +14,8 @@ public class MathUtils {
 	 * @return true true if two doubles are considered equal.
 	 */
 	public static boolean equals(double a, double b) {
-		return equals(a, b, EPSILON);
+		return Double.compare(a, b) == 0;
+		// return equals(a, b, EPSILON);
 	}
 
 	/**
@@ -48,7 +49,8 @@ public class MathUtils {
 	 *         double
 	 */
 	public static boolean greaterThan(double a, double b) {
-		return greaterThan(a, b, EPSILON);
+		return Double.compare(a, b) > 0;
+		// return greaterThan(a, b, EPSILON);
 	}
 
 	/**
@@ -80,7 +82,8 @@ public class MathUtils {
 	 *         double
 	 */
 	public static boolean lessThan(double a, double b) {
-		return lessThan(a, b, EPSILON);
+		return Double.compare(a, b) < 0;
+//		return lessThan(a, b, EPSILON);
 	}
 
 	/**
@@ -101,7 +104,8 @@ public class MathUtils {
 	}
 
 	public static boolean lessThanOrEquals(double a, double b) {
-		return lessThanOrEquals(a, b, EPSILON);
+		return Double.compare(a, b) <= 0;
+//		return lessThanOrEquals(a, b, EPSILON);
 	}
 
 	public static boolean lessThanOrEquals(double a, double b, double epsilon) {
@@ -109,7 +113,8 @@ public class MathUtils {
 	}
 
 	public static boolean greaterThanOrEquals(double a, double b) {
-		return greaterThanOrEquals(a, b, EPSILON);
+		return Double.compare(a, b) >= 0;
+//		return greaterThanOrEquals(a, b, EPSILON);
 	}
 
 	public static boolean greaterThanOrEquals(double a, double b, double epsilon) {

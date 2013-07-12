@@ -24,8 +24,8 @@ public abstract class Environment implements Parametrizable {
 		initialize();
 	}
 
-	public Server getMachineOfType(Server server) throws UnknownServerException,
-			NoMoreServersAvailableException {
+	public Server getMachineOfType(Server server)
+			throws UnknownServerException, NoMoreServersAvailableException {
 		MachineStatus status = environmentStatus.get(server);
 		if (status == null) {
 			throw new UnknownServerException(
@@ -35,7 +35,7 @@ public abstract class Environment implements Parametrizable {
 		status.useOne();
 
 		Server newServer = server.clone();
-		
+
 		return newServer;
 	}
 
@@ -50,6 +50,10 @@ public abstract class Environment implements Parametrizable {
 		}
 
 		return availableMachines;
+	}
+
+	public List<Server> getAllMachineTypes() {
+		return new ArrayList<Server>(environmentStatus.keySet());
 	}
 
 	public Map<Server, MachineStatus> getEnvironmentStatus() {
@@ -113,7 +117,7 @@ public abstract class Environment implements Parametrizable {
 	}
 
 	protected abstract void initialize();
-	
+
 	@Override
 	public Environment clone() {
 		Environment newEnvironment = null;
@@ -130,24 +134,26 @@ public abstract class Environment implements Parametrizable {
 		}
 		return newEnvironment;
 	}
-	
+
 	public boolean isSubset(Environment environment) {
 		HashMap<String, Server> keyList = new HashMap<String, Server>();
 		for (Server server : environmentStatus.keySet()) {
 			keyList.put(server.getType(), server);
 		}
-		
+
 		for (Server server : environment.environmentStatus.keySet()) {
-			MachineStatus status = environmentStatus.get(keyList.get(server.getType()));
+			MachineStatus status = environmentStatus.get(keyList.get(server
+					.getType()));
 			if (status == null) {
 				return false;
 			}
-			
-			if (status.getAvailable() < environment.environmentStatus.get(server).getAvailable()) {
+
+			if (status.getAvailable() < environment.environmentStatus.get(
+					server).getAvailable()) {
 				return false;
 			}
 		}
-		
+
 		return true;
 	}
 }
